@@ -13,6 +13,20 @@ probe() { # probe <namespace> <host>
     2>&1 || true
 }
 
+# Expect a connection to succeed. Postgres can report Ready a moment before its
+# service accepts connections, so the allowed path gets a few attempts; the
+# denied path never retries (a retry could only hide a leak).
+expect_reachable() { # expect_reachable <namespace> <host> ; prints the last probe output on failure
+  local out
+  for _ in 1 2 3 4 5 6; do
+    out=$(probe "$1" "$2")
+    grep -q "accepting connections" <<<"$out" && return 0
+    sleep 5
+  done
+  echo "    last probe output: $(tr '\n' ' ' <<<"$out" | cut -c1-200)" >&2
+  return 1
+}
+
 # Server-side dry run of a pod that passes Pod Security, so only Kyverno can reject it.
 admit_pod() { # admit_pod <namespace> <image>
   kubectl -n "$1" run "kyv-$RANDOM" --restart=Never --dry-run=server -o name --image="$2" \

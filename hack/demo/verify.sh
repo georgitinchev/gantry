@@ -20,7 +20,7 @@ admit_pod "$env" ghcr.io/cloudnative-pg/postgresql:latest | grep -q tenant-image
 if [[ "$postgres" == true ]]; then
   [[ $(kubectl -n "$env" get postgresinstance db -o jsonpath='{.status.conditions[?(@.type=="Ready")].status}') == True ]] \
     && pass "PostgreSQL Ready" || fail "PostgreSQL not Ready"
-  probe "$env" "db-rw.$env.svc" | grep -q "accepting connections" \
+  expect_reachable "$env" "db-rw.$env.svc" \
     && pass "same-namespace -> postgres allowed" || fail "same-namespace blocked"
   kubectl create namespace demo-outsider --dry-run=client -o yaml | kubectl apply -f - >/dev/null
   probe demo-outsider "db-rw.$env.svc" | grep -q "no response" \

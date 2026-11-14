@@ -48,7 +48,7 @@ python3 -c "import ipaddress,sys; sys.exit(0 if ipaddress.ip_address('$ip') in i
 echo "--- network isolation"
 host=orders-rw.checkout-dev.svc
 # pg_isready prints "accepting connections" or, when packets are dropped, "no response".
-probe checkout-dev "$host" | grep -q "accepting connections" \
+expect_reachable checkout-dev "$host" \
   && pass "same-namespace -> postgres allowed" || fail "same-namespace blocked"
 probe search-dev "$host" | grep -q "no response" \
   && pass "cross-tenant -> postgres dropped by NetworkPolicy" || fail "cross-tenant traffic not dropped"
