@@ -1,0 +1,12 @@
+.DS_Store
+node_modules/
+.next/
+.source/
+bin/
+dist/
+coverage/
+*.log
+.env*
+!.env.example
+.vercel
+/snapshots/local/

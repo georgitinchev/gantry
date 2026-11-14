@@ -1,0 +1,38 @@
+# Crossplane v2 composes plain Kubernetes resources directly, so its service
+# account needs explicit rights on every kind our compositions emit.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: gantry:crossplane-compose
+  labels:
+    rbac.crossplane.io/aggregate-to-crossplane: "true"
+rules:
+  - apiGroups: [""]
+    resources: [namespaces, resourcequotas, limitranges]
+    verbs: ["*"]
+  - apiGroups: [networking.k8s.io]
+    resources: [networkpolicies]
+    verbs: ["*"]
+  - apiGroups: [rbac.authorization.k8s.io]
+    resources: [rolebindings]
+    verbs: ["*"]
+  - apiGroups: [rbac.authorization.k8s.io]
+    resources: [clusterroles]
+    resourceNames: [gantry:tenant]
+    verbs: [bind]
+  - apiGroups: [postgresql.cnpg.io]
+    resources: [clusters]
+    verbs: ["*"]
+---
+# What a tenant owner may do inside their own environment.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: gantry:tenant
+rules:
+  - apiGroups: ["", apps, batch]
+    resources: [pods, pods/log, services, configmaps, secrets, deployments, statefulsets, jobs, cronjobs, persistentvolumeclaims]
+    verbs: [get, list, watch, create, update, patch, delete]
+  - apiGroups: [platform.gantry.internal]
+    resources: [postgresinstances]
+    verbs: [get, list, watch, create, update, patch, delete]

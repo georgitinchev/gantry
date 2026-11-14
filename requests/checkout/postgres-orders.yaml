@@ -1,0 +1,9 @@
+apiVersion: platform.gantry.internal/v1alpha1
+kind: PostgresInstance
+metadata:
+  name: orders
+  namespace: checkout-dev
+spec:
+  size: small
+  version: "17"
+  storageGB: 1

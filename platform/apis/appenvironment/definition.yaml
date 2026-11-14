@@ -1,0 +1,62 @@
+apiVersion: apiextensions.crossplane.io/v2
+kind: CompositeResourceDefinition
+metadata:
+  name: appenvironments.platform.gantry.internal
+spec:
+  group: platform.gantry.internal
+  names:
+    kind: AppEnvironment
+    plural: appenvironments
+    shortNames: [appenv]
+  scope: Cluster
+  versions:
+    - name: v1alpha1
+      served: true
+      referenceable: true
+      additionalPrinterColumns:
+        - name: TEAM
+          type: string
+          jsonPath: .spec.team
+        - name: SIZE
+          type: string
+          jsonPath: .spec.size
+        - name: EXPOSURE
+          type: string
+          jsonPath: .spec.exposure
+      schema:
+        openAPIV3Schema:
+          type: object
+          description: An isolated, quota-bound namespace for one team's application.
+          properties:
+            spec:
+              type: object
+              required: [team, size]
+              properties:
+                team:
+                  type: string
+                  description: Owning team. Must match the request directory name.
+                  pattern: "^[a-z][a-z0-9-]{1,28}[a-z0-9]$"
+                size:
+                  type: string
+                  description: T-shirt size that drives the ResourceQuota and LimitRange.
+                  enum: [small, medium, large]
+                exposure:
+                  type: string
+                  description: internal = reachable only in-cluster; public = gateway may route to it.
+                  enum: [internal, public]
+                  default: internal
+                owners:
+                  type: array
+                  description: Users bound to the gantry:tenant role in this namespace.
+                  maxItems: 10
+                  items:
+                    type: string
+                    pattern: "^[A-Za-z0-9][A-Za-z0-9-]{0,38}$"
+            status:
+              type: object
+              properties:
+                namespace:
+                  type: string
+                quota:
+                  type: object
+                  x-kubernetes-preserve-unknown-fields: true

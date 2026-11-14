@@ -1,0 +1,26 @@
+# Platform namespaces carry a role label that tenant NetworkPolicies select on.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: crossplane-system
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: cnpg-system
+  labels:
+    platform.gantry.internal/role: operators
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: monitoring
+  labels:
+    platform.gantry.internal/role: monitoring
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: gateway
+  labels:
+    platform.gantry.internal/role: gateway

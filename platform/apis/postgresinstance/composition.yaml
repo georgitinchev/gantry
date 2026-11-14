@@ -1,0 +1,84 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: postgresinstance-cnpg
+  labels:
+    platform.gantry.internal/api: postgresinstance
+spec:
+  compositeTypeRef:
+    apiVersion: platform.gantry.internal/v1alpha1
+    kind: PostgresInstance
+  mode: Pipeline
+  pipeline:
+    - step: render
+      functionRef:
+        name: function-go-templating
+      input:
+        apiVersion: gotemplating.fn.crossplane.io/v1beta1
+        kind: GoTemplate
+        source: Inline
+        inline:
+          template: |
+            {{- $xr := .observed.composite.resource }}
+            {{- $name := $xr.metadata.name }}
+            {{- $ns := $xr.metadata.namespace }}
+            {{- $spec := $xr.spec }}
+            {{- $instances := ternary 2 1 (eq $spec.size "medium") }}
+            ---
+            apiVersion: postgresql.cnpg.io/v1
+            kind: Cluster
+            metadata:
+              name: {{ $name }}
+              annotations:
+                gotemplating.fn.crossplane.io/composition-resource-name: cluster
+            spec:
+              instances: {{ $instances }}
+              imageName: ghcr.io/cloudnative-pg/postgresql:{{ default "17" $spec.version }}
+              bootstrap:
+                initdb:
+                  database: {{ default "app" $spec.database }}
+                  owner: {{ default "app" $spec.database }}
+              storage:
+                size: {{ default 1 $spec.storageGB }}Gi
+              resources:
+                requests: {cpu: 100m, memory: 256Mi}
+                limits: {cpu: "1", memory: 512Mi}
+              monitoring:
+                enablePodMonitor: false
+            ---
+            # Tenant namespaces are default-deny. Open only what CloudNativePG needs:
+            # the operator probing the instance status port, and the instance
+            # manager talking to the Kubernetes API.
+            apiVersion: networking.k8s.io/v1
+            kind: NetworkPolicy
+            metadata:
+              name: {{ $name }}-cnpg
+              annotations:
+                gotemplating.fn.crossplane.io/composition-resource-name: netpol
+                gotemplating.fn.crossplane.io/ready: "True"
+            spec:
+              podSelector:
+                matchLabels:
+                  cnpg.io/cluster: {{ $name }}
+              policyTypes: [Ingress, Egress]
+              ingress:
+                - from:
+                    - namespaceSelector:
+                        matchLabels:
+                          platform.gantry.internal/role: operators
+                  ports:
+                    - {protocol: TCP, port: 8000}
+              egress:
+                - ports:
+                    - {protocol: TCP, port: 443}
+                    - {protocol: TCP, port: 6443}
+            ---
+            apiVersion: platform.gantry.internal/v1alpha1
+            kind: PostgresInstance
+            status:
+              endpoint: {{ $name }}-rw.{{ $ns }}.svc:5432
+              credentialsSecret: {{ $name }}-app
+              instances: {{ $instances }}
+    - step: ready
+      functionRef:
+        name: function-auto-ready
