@@ -1,0 +1,57 @@
+name: nightly
+
+# Builds the platform from scratch every night and publishes a status
+# snapshot to the orphan `status` branch, which the portal renders.
+on:
+  schedule:
+    - cron: "17 3 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write # push snapshot.json to the status branch
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - run: cat hack/versions.env >> "$GITHUB_ENV"
+      - uses: azure/setup-helm@2f5e7bc67f1f9972ab16657bb795f36d8f04de0e # v5.1.0
+        with:
+          version: v4.3.1
+      - uses: helm/kind-action@ea822c7bf1874f08e5a491df991c228edffc3376 # v1.15.2
+        with:
+          version: v0.33.0
+          cluster_name: gantry
+          config: hack/kind.yaml
+          node_image: ${{ env.KIND_NODE_IMAGE }}
+      - name: verify platform
+        id: verify
+        continue-on-error: true
+        run: ./hack/verify.sh "$RUNNER_TEMP/snapshot.json"
+      - name: publish snapshot
+        if: always()
+        run: |
+          [[ -s "$RUNNER_TEMP/snapshot.json" ]] || { echo "no snapshot produced"; exit 1; }
+          git config user.name "gantry-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch origin status || true
+          if git rev-parse --verify -q origin/status >/dev/null; then
+            git switch -c status origin/status
+          else
+            git switch --orphan status
+          fi
+          git rm -rq --ignore-unmatch . || true
+          cp "$RUNNER_TEMP/snapshot.json" snapshot.json
+          git add snapshot.json
+          git commit -qm "status: $(date -u +%Y-%m-%dT%H:%MZ)" || exit 0
+          git push origin status
+      - name: diagnostics
+        if: steps.verify.outcome == 'failure'
+        run: ./hack/diagnose.sh
+      - name: fail the run if verification failed
+        if: steps.verify.outcome == 'failure'
+        run: exit 1

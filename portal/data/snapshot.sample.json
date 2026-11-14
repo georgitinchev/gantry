@@ -1,0 +1,325 @@
+{
+  "generatedAt": "2026-11-14T21:20:24Z",
+  "commit": "377a1425d50923293c5900cb64423a854cd1e5c0",
+  "runUrl": null,
+  "bootstrapSeconds": 75,
+  "versions": {
+    "kubernetes": "v1.37.0",
+    "crossplane": "2.4.3",
+    "cloudnativepg": "1.30.1",
+    "kyverno": "v1.19.2"
+  },
+  "checks": [
+    {
+      "name": "all requests Ready",
+      "status": "pass"
+    },
+    {
+      "name": "pod security 'restricted' enforced",
+      "status": "pass"
+    },
+    {
+      "name": "quota present",
+      "status": "pass"
+    },
+    {
+      "name": "non-compliant pod rejected by admission",
+      "status": "pass"
+    },
+    {
+      "name": "pinned image from trusted registry admitted",
+      "status": "pass"
+    },
+    {
+      "name": ":latest image rejected",
+      "status": "pass"
+    },
+    {
+      "name": "untrusted registry rejected",
+      "status": "pass"
+    },
+    {
+      "name": "unapproved large environment rejected",
+      "status": "pass"
+    },
+    {
+      "name": "same-namespace -> postgres allowed",
+      "status": "pass"
+    },
+    {
+      "name": "cross-tenant -> postgres dropped by NetworkPolicy",
+      "status": "pass"
+    }
+  ],
+  "resources": [
+    {
+      "kind": "AppEnvironment",
+      "name": "checkout-dev",
+      "namespace": null,
+      "ready": true,
+      "synced": true,
+      "created": "2026-11-14T21:18:46Z",
+      "spec": {
+        "crossplane": {
+          "compositionRef": {
+            "name": "appenvironment"
+          },
+          "compositionRevisionRef": {
+            "name": "appenvironment-09684c4"
+          },
+          "compositionUpdatePolicy": "Automatic",
+          "resourceRefs": [
+            {
+              "apiVersion": "networking.k8s.io/v1",
+              "kind": "NetworkPolicy",
+              "name": "allow-dns",
+              "namespace": "checkout-dev"
+            },
+            {
+              "apiVersion": "networking.k8s.io/v1",
+              "kind": "NetworkPolicy",
+              "name": "allow-platform",
+              "namespace": "checkout-dev"
+            },
+            {
+              "apiVersion": "networking.k8s.io/v1",
+              "kind": "NetworkPolicy",
+              "name": "allow-same-namespace",
+              "namespace": "checkout-dev"
+            },
+            {
+              "apiVersion": "networking.k8s.io/v1",
+              "kind": "NetworkPolicy",
+              "name": "default-deny",
+              "namespace": "checkout-dev"
+            },
+            {
+              "apiVersion": "rbac.authorization.k8s.io/v1",
+              "kind": "RoleBinding",
+              "name": "tenant-owners",
+              "namespace": "checkout-dev"
+            },
+            {
+              "apiVersion": "v1",
+              "kind": "LimitRange",
+              "name": "defaults",
+              "namespace": "checkout-dev"
+            },
+            {
+              "apiVersion": "v1",
+              "kind": "Namespace",
+              "name": "checkout-dev"
+            },
+            {
+              "apiVersion": "v1",
+              "kind": "ResourceQuota",
+              "name": "quota",
+              "namespace": "checkout-dev"
+            }
+          ]
+        },
+        "exposure": "public",
+        "owners": [
+          "georgitinchev"
+        ],
+        "size": "small",
+        "team": "checkout"
+      },
+      "status": {
+        "namespace": "checkout-dev",
+        "quota": {
+          "cpu": "2",
+          "memory": "4Gi",
+          "pods": "10"
+        }
+      },
+      "composed": [
+        {
+          "kind": "NetworkPolicy",
+          "name": "allow-dns"
+        },
+        {
+          "kind": "NetworkPolicy",
+          "name": "allow-platform"
+        },
+        {
+          "kind": "NetworkPolicy",
+          "name": "allow-same-namespace"
+        },
+        {
+          "kind": "NetworkPolicy",
+          "name": "default-deny"
+        },
+        {
+          "kind": "RoleBinding",
+          "name": "tenant-owners"
+        },
+        {
+          "kind": "LimitRange",
+          "name": "defaults"
+        },
+        {
+          "kind": "Namespace",
+          "name": "checkout-dev"
+        },
+        {
+          "kind": "ResourceQuota",
+          "name": "quota"
+        }
+      ]
+    },
+    {
+      "kind": "AppEnvironment",
+      "name": "search-dev",
+      "namespace": null,
+      "ready": true,
+      "synced": true,
+      "created": "2026-11-14T21:18:46Z",
+      "spec": {
+        "crossplane": {
+          "compositionRef": {
+            "name": "appenvironment"
+          },
+          "compositionRevisionRef": {
+            "name": "appenvironment-09684c4"
+          },
+          "compositionUpdatePolicy": "Automatic",
+          "resourceRefs": [
+            {
+              "apiVersion": "networking.k8s.io/v1",
+              "kind": "NetworkPolicy",
+              "name": "allow-dns",
+              "namespace": "search-dev"
+            },
+            {
+              "apiVersion": "networking.k8s.io/v1",
+              "kind": "NetworkPolicy",
+              "name": "allow-platform",
+              "namespace": "search-dev"
+            },
+            {
+              "apiVersion": "networking.k8s.io/v1",
+              "kind": "NetworkPolicy",
+              "name": "allow-same-namespace",
+              "namespace": "search-dev"
+            },
+            {
+              "apiVersion": "networking.k8s.io/v1",
+              "kind": "NetworkPolicy",
+              "name": "default-deny",
+              "namespace": "search-dev"
+            },
+            {
+              "apiVersion": "v1",
+              "kind": "LimitRange",
+              "name": "defaults",
+              "namespace": "search-dev"
+            },
+            {
+              "apiVersion": "v1",
+              "kind": "Namespace",
+              "name": "search-dev"
+            },
+            {
+              "apiVersion": "v1",
+              "kind": "ResourceQuota",
+              "name": "quota",
+              "namespace": "search-dev"
+            }
+          ]
+        },
+        "exposure": "internal",
+        "size": "medium",
+        "team": "search"
+      },
+      "status": {
+        "namespace": "search-dev",
+        "quota": {
+          "cpu": "4",
+          "memory": "8Gi",
+          "pods": "20"
+        }
+      },
+      "composed": [
+        {
+          "kind": "NetworkPolicy",
+          "name": "allow-dns"
+        },
+        {
+          "kind": "NetworkPolicy",
+          "name": "allow-platform"
+        },
+        {
+          "kind": "NetworkPolicy",
+          "name": "allow-same-namespace"
+        },
+        {
+          "kind": "NetworkPolicy",
+          "name": "default-deny"
+        },
+        {
+          "kind": "LimitRange",
+          "name": "defaults"
+        },
+        {
+          "kind": "Namespace",
+          "name": "search-dev"
+        },
+        {
+          "kind": "ResourceQuota",
+          "name": "quota"
+        }
+      ]
+    },
+    {
+      "kind": "PostgresInstance",
+      "name": "orders",
+      "namespace": "checkout-dev",
+      "ready": true,
+      "synced": true,
+      "created": "2026-11-14T21:19:18Z",
+      "spec": {
+        "crossplane": {
+          "compositionRef": {
+            "name": "postgresinstance-cnpg"
+          },
+          "compositionRevisionRef": {
+            "name": "postgresinstance-cnpg-d2de814"
+          },
+          "compositionUpdatePolicy": "Automatic",
+          "resourceRefs": [
+            {
+              "apiVersion": "networking.k8s.io/v1",
+              "kind": "NetworkPolicy",
+              "name": "orders-cnpg"
+            },
+            {
+              "apiVersion": "postgresql.cnpg.io/v1",
+              "kind": "Cluster",
+              "name": "orders"
+            }
+          ]
+        },
+        "database": "app",
+        "size": "small",
+        "storageGB": 1,
+        "version": "17"
+      },
+      "status": {
+        "credentialsSecret": "orders-app",
+        "endpoint": "orders-rw.checkout-dev.svc:5432",
+        "instances": 1
+      },
+      "composed": [
+        {
+          "kind": "NetworkPolicy",
+          "name": "orders-cnpg"
+        },
+        {
+          "kind": "Cluster",
+          "name": "orders"
+        }
+      ]
+    }
+  ]
+}

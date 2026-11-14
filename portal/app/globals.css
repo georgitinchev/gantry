@@ -1,0 +1,134 @@
+@import 'tailwindcss';
+@import 'fumadocs-ui/css/neutral.css';
+@import 'fumadocs-ui/css/preset.css';
+
+/*
+ * gantry design tokens — "desired vs actual".
+ * Drafting-paper neutrals, graphite ink, one lime signal for "reconciled",
+ * one orange for "drift". Dashed = desired state, solid = actual state.
+ */
+:root {
+  --paper: #f4f2ec;
+  --paper-2: #ebe8df;
+  --card: #fbfaf6;
+  --ink: #191b19;
+  --ink-2: #565a50;
+  --line: #d6d2c4;
+  --grid: rgb(25 27 25 / 0.055);
+  --signal: #477209;
+  --signal-fill: #b8f04a;
+  --signal-ink: #1d2a05;
+  --drift: #b8400b;
+  --drift-fill: #fdba74;
+  --danger: #b42318;
+
+  --color-fd-background: var(--paper);
+  --color-fd-foreground: var(--ink);
+  --color-fd-card: var(--card);
+  --color-fd-card-foreground: var(--ink);
+  --color-fd-popover: var(--card);
+  --color-fd-popover-foreground: var(--ink);
+  --color-fd-muted: var(--paper-2);
+  --color-fd-muted-foreground: var(--ink-2);
+  --color-fd-secondary: var(--paper-2);
+  --color-fd-secondary-foreground: var(--ink);
+  --color-fd-accent: var(--paper-2);
+  --color-fd-accent-foreground: var(--ink);
+  --color-fd-border: var(--line);
+  --color-fd-ring: var(--signal);
+  --color-fd-primary: var(--signal);
+  --color-fd-primary-foreground: var(--paper);
+  --color-fd-success: var(--signal);
+  --color-fd-warning: var(--drift);
+  --color-fd-error: var(--danger);
+}
+
+.dark {
+  --paper: #101211;
+  --paper-2: #181b19;
+  --card: #141715;
+  --ink: #e8e6df;
+  --ink-2: #9b9f95;
+  --line: #2a2e2b;
+  --grid: rgb(232 230 223 / 0.045);
+  --signal: #b5f23d;
+  --signal-fill: #b5f23d;
+  --signal-ink: #142003;
+  --drift: #fb923c;
+  --drift-fill: #fb923c;
+  --danger: #f87171;
+
+  --color-fd-primary-foreground: var(--signal-ink);
+}
+
+@theme inline {
+  --font-sans: var(--font-instrument), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-martian), ui-monospace, SFMono-Regular, monospace;
+  --color-paper: var(--paper);
+  --color-paper-2: var(--paper-2);
+  --color-card: var(--card);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-line: var(--line);
+  --color-signal: var(--signal);
+  --color-signal-fill: var(--signal-fill);
+  --color-signal-ink: var(--signal-ink);
+  --color-drift: var(--drift);
+  --color-drift-fill: var(--drift-fill);
+  --color-danger: var(--danger);
+}
+
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-feature-settings: 'ss01', 'cv11';
+}
+
+/* Drafting grid used behind hero sections. */
+.bg-grid {
+  background-image:
+    linear-gradient(var(--grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+/* Small monospace caps labels, the "drawing annotation" voice. */
+.annot {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+
+/* Resource card: dashed while desired, solid once actual. */
+.resource {
+  border: 1.5px dashed color-mix(in oklab, var(--ink) 38%, transparent);
+  background: transparent;
+  transition: border-color 400ms ease, background-color 400ms ease;
+}
+.resource[data-state='ready'] {
+  border-style: solid;
+  border-color: var(--ink);
+  background: var(--card);
+}
+.resource[data-state='drift'] {
+  border-style: solid;
+  border-color: var(--drift);
+}
+
+/* Highlighter underline that wraps line by line and draws in once. */
+@keyframes draw-in {
+  from { background-size: 0% 0.18em; }
+  to { background-size: 100% 0.18em; }
+}
+.marker {
+  background: linear-gradient(var(--signal-fill), var(--signal-fill)) no-repeat 0 92% / 100% 0.18em;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+  animation: draw-in 900ms cubic-bezier(0.2, 0.7, 0.2, 1) 200ms both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .resource, .marker { transition: none; animation: none; }
+}

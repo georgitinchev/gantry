@@ -1,0 +1,101 @@
+name: live-demo
+
+# Started by the portal through a GitHub App (actions: write only).
+# Inputs are fixed choices; demo_id is validated before use and only ever
+# reaches the shell through environment variables.
+on:
+  workflow_dispatch:
+    inputs:
+      demo_id:
+        description: Portal run id (16 hex chars)
+        required: true
+        type: string
+      size:
+        type: choice
+        options: [small, medium]
+        default: small
+      exposure:
+        type: choice
+        options: [internal, public]
+        default: internal
+      postgres:
+        type: choice
+        options: ["true", "false"]
+        default: "true"
+      version:
+        type: choice
+        options: ["16", "17", "18"]
+        default: "17"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: live-demo
+  cancel-in-progress: false
+
+jobs:
+  demo:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      DEMO_ID: ${{ inputs.demo_id }}
+      SIZE: ${{ inputs.size }}
+      EXPOSURE: ${{ inputs.exposure }}
+      POSTGRES: ${{ inputs.postgres }}
+      VERSION: ${{ inputs.version }}
+      PORTAL_URL: ${{ vars.PORTAL_URL }}
+      DEMO_CALLBACK_SECRET: ${{ secrets.DEMO_CALLBACK_SECRET }}
+      RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+    steps:
+      - name: validate run id
+        run: '[[ "$DEMO_ID" =~ ^[a-f0-9]{16}$ ]] || { echo "invalid demo_id"; exit 1; }'
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - run: ./hack/demo/report.sh cluster "Creating a kind cluster on a fresh runner" "$(jq -cn --arg u "$RUN_URL" '{runUrl: $u}')"
+      - run: cat hack/versions.env >> "$GITHUB_ENV"
+      - uses: azure/setup-helm@2f5e7bc67f1f9972ab16657bb795f36d8f04de0e # v5.1.0
+        with:
+          version: v4.3.1
+      - uses: helm/kind-action@ea822c7bf1874f08e5a491df991c228edffc3376 # v1.15.2
+        with:
+          version: v0.33.0
+          cluster_name: gantry
+          config: hack/kind.yaml
+          node_image: ${{ env.KIND_NODE_IMAGE }}
+      - run: ./hack/demo/report.sh platform "Installing Crossplane, CloudNativePG and Kyverno"
+      - run: ./hack/up.sh
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: tools/lint/go.mod
+          cache-dependency-path: tools/lint/go.sum
+      - name: render and lint request
+        run: |
+          echo "DEMO_ENV=$(./hack/demo/render.sh | tail -1)" >> "$GITHUB_ENV"
+          ./hack/demo/report.sh lint "Linting your request with gantry-lint"
+          (cd tools/lint && go run ./cmd/gantry-lint --root ../..)
+      - name: apply
+        run: |
+          ./hack/demo/report.sh apply "Applying requests/demo/*.yaml"
+          kubectl apply -f requests/demo/appenvironment.yaml
+          kubectl wait appenvironment "$DEMO_ENV" --for=condition=Ready --timeout=120s
+          if [[ -f requests/demo/postgres-db.yaml ]]; then kubectl apply -f requests/demo/postgres-db.yaml; fi
+      - name: reconcile
+        run: |
+          for i in $(seq 1 96); do
+            state=$(./hack/demo/progress.sh "$DEMO_ENV")
+            ready=$(jq '[.resources[] | select(.ready | not)] | length == 0' <<<"$state")
+            ./hack/demo/report.sh reconcile "Reconciling: $(jq '[.resources[] | select(.ready)] | length' <<<"$state")/$(jq '.resources | length' <<<"$state") ready" "$state"
+            [[ "$ready" == true ]] && exit 0
+            sleep 5
+          done
+          echo "timed out waiting for readiness"; exit 1
+      - name: verify
+        run: |
+          ./hack/demo/report.sh verify "Checking isolation and admission policies"
+          ./hack/demo/verify.sh "$DEMO_ENV" "$POSTGRES" > checks.json
+          ./hack/demo/report.sh done "Verified: your request reconciled on a cluster that did not exist five minutes ago" "$(cat checks.json)"
+      - name: report failure
+        if: failure()
+        run: |
+          extra=$( [[ -s checks.json ]] && cat checks.json || echo '{}' )
+          ./hack/demo/report.sh failed "The run failed; the Actions log has the details" "$extra"
