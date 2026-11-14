@@ -56,3 +56,15 @@ describe('demo input', () => {
     expect(DemoEvent.safeParse({ phase: 'pwn', message: 'x' }).success).toBe(false);
   });
 });
+
+import { canonicalOrigin } from '@/lib/demo/config';
+describe('canonical origin', () => {
+  it('uses PORTAL_URL when set and well-formed', () => {
+    process.env.PORTAL_URL = 'https://gantry-tinchev.vercel.app/';
+    expect(canonicalOrigin('https://gantry-eosin.vercel.app')).toBe('https://gantry-tinchev.vercel.app');
+    process.env.PORTAL_URL = 'javascript:alert(1)';
+    expect(canonicalOrigin('https://gantry-eosin.vercel.app')).toBe('https://gantry-eosin.vercel.app');
+    delete process.env.PORTAL_URL;
+    expect(canonicalOrigin('http://localhost:3000')).toBe('http://localhost:3000');
+  });
+});

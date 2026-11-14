@@ -1,6 +1,6 @@
 import { timingSafeEqual } from 'node:crypto';
 import { NextResponse, type NextRequest } from 'next/server';
-import { demoConfig } from '@/lib/demo/config';
+import { canonicalOrigin, demoConfig } from '@/lib/demo/config';
 import { SESSION_COOKIE, SESSION_TTL, signSession } from '@/lib/demo/session';
 
 export async function GET(req: NextRequest) {
@@ -22,7 +22,7 @@ export async function GET(req: NextRequest) {
       client_id: process.env.GITHUB_OAUTH_CLIENT_ID,
       client_secret: process.env.GITHUB_OAUTH_CLIENT_SECRET,
       code,
-      redirect_uri: new URL('/api/auth/callback', req.nextUrl.origin).toString(),
+      redirect_uri: new URL('/api/auth/callback', canonicalOrigin(req.nextUrl.origin)).toString(),
     }),
   });
   const { access_token } = (await tokenRes.json()) as { access_token?: string };
