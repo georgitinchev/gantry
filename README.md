@@ -6,6 +6,8 @@
 [![nightly](https://github.com/georgitinchev/gantry/actions/workflows/nightly.yml/badge.svg)](https://github.com/georgitinchev/gantry/actions/workflows/nightly.yml)
 [![license](https://img.shields.io/badge/license-Apache--2.0-informational)](LICENSE)
 
+**Live:** [gantry-tinchev.vercel.app](https://gantry-tinchev.vercel.app) · [docs](https://gantry-tinchev.vercel.app/docs) · [status](https://gantry-tinchev.vercel.app/status) · [live demo](https://gantry-tinchev.vercel.app/demo)
+
 gantry is a small internal developer platform you can read end to end: a
 self-service **catalog**, **Crossplane** APIs behind it, a layered **policy gate**
 in front of it, and a real Kubernetes cluster that **proves** every change —
