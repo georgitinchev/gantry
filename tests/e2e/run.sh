@@ -10,6 +10,7 @@ find requests -name 'appenvironment*.yaml' -exec kubectl apply -f {} \;
 kubectl wait appenvironment --all --for=condition=Ready --timeout=180s
 find requests -name '*.yaml' ! -name 'appenvironment*.yaml' -exec kubectl apply -f {} \;
 kubectl wait postgresinstance -A --all --for=condition=Ready --timeout=480s
+kubectl wait virtualmachine -A --all --for=condition=Ready --timeout=240s
 pass "all requests Ready"
 
 echo "--- tenant guarantees"
@@ -34,6 +35,15 @@ admit_pod checkout-dev evil.example.com/miner:1.0 | grep -q "tenant-image-hygien
 printf 'apiVersion: platform.gantry.internal/v1alpha1\nkind: AppEnvironment\nmetadata: {name: search-big}\nspec: {team: search, size: large}\n' \
   | dry_apply | grep -q "require-approval-for-large" \
   && pass "unapproved large environment rejected" || fail "unapproved large environment admitted"
+
+echo "--- cloud networking (gantry-cloud via provider-gantry-cloud)"
+cidrs=$(kubectl get appenvironment -o jsonpath='{range .items[*]}{.status.network.cidr}{"\n"}{end}')
+[[ $(sort <<<"$cidrs" | uniq | grep -c /) -eq $(kubectl get appenvironment -o name | wc -l) ]] \
+  && pass "every environment has its own cloud network" || fail "environments share or lack networks: $cidrs"
+ip=$(kubectl -n checkout-dev get virtualmachine worker -o jsonpath='{.status.ip}')
+cidr=$(kubectl get appenvironment checkout-dev -o jsonpath='{.status.network.cidr}')
+python3 -c "import ipaddress,sys; sys.exit(0 if ipaddress.ip_address('$ip') in ipaddress.ip_network('$cidr') else 1)" \
+  && pass "VM ip $ip is inside its environment's network $cidr" || fail "VM ip $ip not in $cidr"
 
 echo "--- network isolation"
 host=orders-rw.checkout-dev.svc

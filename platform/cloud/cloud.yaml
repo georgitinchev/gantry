@@ -1,0 +1,142 @@
+# gantry-cloud (the simulated IaaS) and its Crossplane provider.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: gantry-system
+  labels:
+    platform.gantry.internal/role: operators
+    pod-security.kubernetes.io/enforce: restricted
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gantry-cloud
+  namespace: gantry-system
+  labels: {app: gantry-cloud}
+spec:
+  replicas: 1
+  selector: {matchLabels: {app: gantry-cloud}}
+  template:
+    metadata:
+      labels: {app: gantry-cloud}
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8080"
+    spec:
+      automountServiceAccountToken: false
+      securityContext: {runAsNonRoot: true, seccompProfile: {type: RuntimeDefault}}
+      containers:
+        - name: cloud
+          image: gantry/cloud:dev
+          imagePullPolicy: Never
+          ports: [{name: http, containerPort: 8080}]
+          env:
+            - name: API_TOKEN
+              valueFrom: {secretKeyRef: {name: gantry-cloud-token, key: token}}
+            - {name: MAX_INSTANCES, value: "12"}
+            - {name: PROVISION_DELAY, value: "8s"}
+          readinessProbe: {httpGet: {path: /healthz, port: http}, periodSeconds: 5}
+          livenessProbe: {httpGet: {path: /healthz, port: http}, periodSeconds: 20}
+          resources:
+            requests: {cpu: 20m, memory: 32Mi}
+            limits: {cpu: 200m, memory: 64Mi}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: {drop: [ALL]}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: gantry-cloud
+  namespace: gantry-system
+  labels: {app: gantry-cloud}
+spec:
+  selector: {app: gantry-cloud}
+  ports: [{name: http, port: 80, targetPort: http}]
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: provider-gantry-cloud
+  namespace: gantry-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: gantry:provider-gantry-cloud
+rules:
+  - apiGroups: [cloud.gantry.internal]
+    resources: [networks, instances]
+    verbs: [get, list, watch, update, patch]
+  - apiGroups: [cloud.gantry.internal]
+    resources: [networks/status, instances/status]
+    verbs: [get, update, patch]
+  - apiGroups: [""]
+    resources: [events]
+    verbs: [create, patch]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: gantry:provider-gantry-cloud
+roleRef: {apiGroup: rbac.authorization.k8s.io, kind: ClusterRole, name: "gantry:provider-gantry-cloud"}
+subjects: [{kind: ServiceAccount, name: provider-gantry-cloud, namespace: gantry-system}]
+---
+# Leader election lease, scoped to the provider's namespace.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: provider-gantry-cloud-leader
+  namespace: gantry-system
+rules:
+  - apiGroups: [coordination.k8s.io]
+    resources: [leases]
+    verbs: [get, list, watch, create, update, patch, delete]
+  - apiGroups: [""]
+    resources: [events]
+    verbs: [create, patch]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: provider-gantry-cloud-leader
+  namespace: gantry-system
+roleRef: {apiGroup: rbac.authorization.k8s.io, kind: Role, name: provider-gantry-cloud-leader}
+subjects: [{kind: ServiceAccount, name: provider-gantry-cloud, namespace: gantry-system}]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: provider-gantry-cloud
+  namespace: gantry-system
+  labels: {app: provider-gantry-cloud}
+spec:
+  replicas: 1
+  selector: {matchLabels: {app: provider-gantry-cloud}}
+  template:
+    metadata:
+      labels: {app: provider-gantry-cloud}
+    spec:
+      serviceAccountName: provider-gantry-cloud
+      securityContext: {runAsNonRoot: true, seccompProfile: {type: RuntimeDefault}}
+      containers:
+        - name: provider
+          image: gantry/provider-gantry-cloud:dev
+          imagePullPolicy: Never
+          args: ["--poll=15s"]
+          env:
+            - {name: CLOUD_URL, value: "http://gantry-cloud.gantry-system.svc"}
+            - name: CLOUD_TOKEN
+              valueFrom: {secretKeyRef: {name: gantry-cloud-token, key: token}}
+            - {name: POD_NAMESPACE, valueFrom: {fieldRef: {fieldPath: metadata.namespace}}}
+          ports: [{name: metrics, containerPort: 8080}]
+          readinessProbe: {httpGet: {path: /readyz, port: 8081}, periodSeconds: 5}
+          livenessProbe: {httpGet: {path: /healthz, port: 8081}, periodSeconds: 20}
+          resources:
+            requests: {cpu: 20m, memory: 64Mi}
+            limits: {cpu: 300m, memory: 128Mi}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: {drop: [ALL]}

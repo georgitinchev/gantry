@@ -23,6 +23,9 @@ rules:
   - apiGroups: [postgresql.cnpg.io]
     resources: [clusters]
     verbs: ["*"]
+  - apiGroups: [cloud.gantry.internal]
+    resources: [networks, instances]
+    verbs: ["*"]
 ---
 # What a tenant owner may do inside their own environment.
 apiVersion: rbac.authorization.k8s.io/v1
@@ -34,5 +37,5 @@ rules:
     resources: [pods, pods/log, services, configmaps, secrets, deployments, statefulsets, jobs, cronjobs, persistentvolumeclaims]
     verbs: [get, list, watch, create, update, patch, delete]
   - apiGroups: [platform.gantry.internal]
-    resources: [postgresinstances]
+    resources: [postgresinstances, virtualmachines]
     verbs: [get, list, watch, create, update, patch, delete]

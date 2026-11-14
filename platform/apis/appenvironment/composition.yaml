@@ -167,10 +167,23 @@ spec:
               {{- end }}
             {{- end }}
             ---
+            # A private network in gantry-cloud; VirtualMachines in this environment land here.
+            apiVersion: cloud.gantry.internal/v1alpha1
+            kind: Network
+            metadata:
+              name: network
+              namespace: {{ $ns }}
+              annotations:
+                gotemplating.fn.crossplane.io/composition-resource-name: network
+            spec:
+              forProvider: {}
+            ---
             apiVersion: platform.gantry.internal/v1alpha1
             kind: AppEnvironment
             status:
               namespace: {{ $ns }}
+              network:
+                cidr: {{ dig "resources" "network" "resource" "status" "atProvider" "cidr" "pending" .observed | quote }}
               quota:
                 cpu: {{ $q.limCpu | quote }}
                 memory: {{ $q.limMem }}

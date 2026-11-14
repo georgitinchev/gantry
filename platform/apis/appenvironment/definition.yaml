@@ -26,6 +26,9 @@ spec:
         - name: EXPOSURE
           type: string
           jsonPath: .spec.exposure
+        - name: NETWORK
+          type: string
+          jsonPath: .status.network.cidr
       schema:
         openAPIV3Schema:
           type: object
@@ -63,3 +66,8 @@ spec:
                 quota:
                   type: object
                   x-kubernetes-preserve-unknown-fields: true
+                network:
+                  type: object
+                  properties:
+                    cidr:
+                      type: string

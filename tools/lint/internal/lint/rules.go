@@ -20,6 +20,9 @@ type Config struct {
 // sizePoints is a deliberately simple cost model: bigger things cost more.
 var sizePoints = map[string]int{"small": 1, "medium": 2, "large": 4}
 
+// vmsPerEnvironment caps VirtualMachines by the size of the environment they live in.
+var vmsPerEnvironment = map[string]int{"small": 1, "medium": 2, "large": 4}
+
 var (
 	teamDirRe  = regexp.MustCompile(`^[a-z][a-z0-9-]{1,28}[a-z0-9]$`)
 	fileNameRe = regexp.MustCompile(`^[a-z0-9]+(-[a-z0-9]+)*\.yaml$`)
@@ -40,6 +43,7 @@ func Check(apis map[string]API, reqs []*Request, cfg Config) []Finding {
 	fs = append(fs, checkOwnership(apis, valid)...)
 	fs = append(fs, checkUniqueness(valid)...)
 	fs = append(fs, checkBudget(valid, cfg)...)
+	fs = append(fs, checkVMLimits(valid)...)
 	Sort(fs)
 	return fs
 }
@@ -239,6 +243,32 @@ func checkBudget(reqs []*Request, cfg Config) []Finding {
 			fs = append(fs, errorf(path.Dir(r.Path), 0, "budget", "team %q uses %d size points, budget is %d (small=1, medium=2, large=4)", team, pts, cfg.TeamBudget))
 		case pts == cfg.TeamBudget:
 			fs = append(fs, warnf(path.Dir(r.Path), 0, "budget", "team %q is at its budget of %d size points", team, cfg.TeamBudget))
+		}
+	}
+	return fs
+}
+
+func checkVMLimits(reqs []*Request) []Finding {
+	envSize := map[string]string{}
+	for _, r := range reqs {
+		if r.Kind == "AppEnvironment" {
+			envSize[r.Name], _ = r.Spec["size"].(string)
+		}
+	}
+	count := map[string]int{}
+	var fs []Finding
+	for _, r := range reqs {
+		if r.Kind != "VirtualMachine" {
+			continue
+		}
+		size, ok := envSize[r.Namespace]
+		if !ok {
+			continue // ownership already reports the missing environment
+		}
+		count[r.Namespace]++
+		if limit := vmsPerEnvironment[size]; count[r.Namespace] > limit {
+			fs = append(fs, errorf(r.Path, r.Line("metadata", "namespace"), "vm-limit",
+				"environment %q is %s and allows %d VirtualMachine(s); resize the environment to add more", r.Namespace, size, limit))
 		}
 	}
 	return fs

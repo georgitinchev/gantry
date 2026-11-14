@@ -1,0 +1,46 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: virtualmachine-gantry-cloud
+  labels:
+    platform.gantry.internal/api: virtualmachine
+spec:
+  compositeTypeRef:
+    apiVersion: platform.gantry.internal/v1alpha1
+    kind: VirtualMachine
+  mode: Pipeline
+  pipeline:
+    - step: render
+      functionRef:
+        name: function-go-templating
+      input:
+        apiVersion: gotemplating.fn.crossplane.io/v1beta1
+        kind: GoTemplate
+        source: Inline
+        inline:
+          template: |
+            {{- $xr := .observed.composite.resource }}
+            {{- $vm := dig "resources" "instance" "resource" "status" "atProvider" (dict) .observed }}
+            ---
+            apiVersion: cloud.gantry.internal/v1alpha1
+            kind: Instance
+            metadata:
+              name: {{ $xr.metadata.name }}
+              annotations:
+                gotemplating.fn.crossplane.io/composition-resource-name: instance
+            spec:
+              forProvider:
+                size: {{ $xr.spec.size }}
+                # every AppEnvironment composes a Network called "network"
+                networkRef:
+                  name: network
+            ---
+            apiVersion: platform.gantry.internal/v1alpha1
+            kind: VirtualMachine
+            status:
+              ip: {{ dig "ip" "" $vm | quote }}
+              state: {{ dig "state" "pending" $vm | quote }}
+              cloudId: {{ dig "id" "" $vm | quote }}
+    - step: ready
+      functionRef:
+        name: function-auto-ready

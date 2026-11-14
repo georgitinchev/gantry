@@ -1,0 +1,47 @@
+apiVersion: apiextensions.crossplane.io/v2
+kind: CompositeResourceDefinition
+metadata:
+  name: virtualmachines.platform.gantry.internal
+  annotations:
+    # gantry-lint: requests of this kind live at requests/<team>/vm-<name>.yaml
+    platform.gantry.internal/file-prefix: vm
+spec:
+  group: platform.gantry.internal
+  names:
+    kind: VirtualMachine
+    plural: virtualmachines
+    shortNames: [vm]
+  scope: Namespaced
+  versions:
+    - name: v1alpha1
+      served: true
+      referenceable: true
+      additionalPrinterColumns:
+        - name: SIZE
+          type: string
+          jsonPath: .spec.size
+        - name: IP
+          type: string
+          jsonPath: .status.ip
+      schema:
+        openAPIV3Schema:
+          type: object
+          description: A virtual machine in gantry-cloud, placed in its environment's private network.
+          properties:
+            spec:
+              type: object
+              required: [size]
+              properties:
+                size:
+                  type: string
+                  description: small, medium or large. Changing it resizes the VM in place.
+                  enum: [small, medium, large]
+            status:
+              type: object
+              properties:
+                ip:
+                  type: string
+                state:
+                  type: string
+                cloudId:
+                  type: string

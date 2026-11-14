@@ -28,7 +28,7 @@ func TestEveryRuleFires(t *testing.T) {
 	}
 	for _, rule := range []string{
 		"layout", "single-document", "known-api", "file-name", "scope",
-		"schema", "unknown-field", "ownership", "unique", "budget",
+		"schema", "unknown-field", "ownership", "unique", "budget", "vm-limit",
 	} {
 		if got[rule] == 0 {
 			t.Errorf("rule %q did not fire", rule)

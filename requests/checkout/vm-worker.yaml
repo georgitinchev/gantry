@@ -1,0 +1,7 @@
+apiVersion: platform.gantry.internal/v1alpha1
+kind: VirtualMachine
+metadata:
+  name: worker
+  namespace: checkout-dev
+spec:
+  size: small
