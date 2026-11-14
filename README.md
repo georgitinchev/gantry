@@ -46,7 +46,7 @@ measures the response. Results are published to the portal's status page.
 | crash-looping container | `GantryTenantPodCrashLooping` fires |
 | fill an environment's pod quota | `GantryTenantQuotaNearLimit` fires |
 | request a database in the full environment | `GantryCompositeNotReady` fires, then recovers on its own once quota frees up |
-| cloud API fails 60% of writes | the provider retries until the VM is Ready |
+| cloud API rejects the next 3 writes | the provider retries through every 503 until the VM is Ready |
 
 Every alert links to a [runbook](docs/runbooks/index.md), and alert rules have
 `promtool` unit tests on every PR. The first drill run found a real bug: a

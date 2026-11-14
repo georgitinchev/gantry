@@ -62,6 +62,7 @@ export default async function StatusPage() {
                       <span>{d.name}</span>
                       <StatusChip ok={d.status === 'pass'}>{d.status === 'pass' ? `${d.seconds}s` : 'fail'}</StatusChip>
                     </div>
+                    {!d.alert && d.note && <span className="text-xs text-ink-2">{d.note}</span>}
                     {d.alert && (
                       <Link href={runbookFor(d.alert)} className="annot w-fit underline decoration-line underline-offset-4 hover:!text-ink">
                         {d.alert} → runbook

@@ -7,7 +7,7 @@ results=${1:-/dev/null}
 bootstrap=${2:-0}
 drills=${3:-/dev/null}
 
-xrs=$(kubectl get appenvironment,postgresinstance -A -o json | jq '[.items[] | {
+xrs=$(kubectl get appenvironment,postgresinstance,virtualmachine -A -o json | jq '[.items[] | {
   kind, name: .metadata.name, namespace: (.metadata.namespace // null),
   ready:  ((.status.conditions // []) | map(select(.type=="Ready"))  | .[0].status == "True"),
   synced: ((.status.conditions // []) | map(select(.type=="Synced")) | .[0].status == "True"),
@@ -15,7 +15,7 @@ xrs=$(kubectl get appenvironment,postgresinstance -A -o json | jq '[.items[] | {
   spec, status: (.status | del(.conditions))
 }]')
 
-composed=$(kubectl get appenvironment,postgresinstance -A -o json | jq '[.items[] | {
+composed=$(kubectl get appenvironment,postgresinstance,virtualmachine -A -o json | jq '[.items[] | {
   key: "\(.kind)/\(.metadata.namespace // "")/\(.metadata.name)",
   value: [(.spec.crossplane.resourceRefs // [])[] | {kind, name}]
 }] | from_entries')

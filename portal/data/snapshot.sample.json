@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-11-14T21:20:24Z",
-  "commit": "377a1425d50923293c5900cb64423a854cd1e5c0",
+  "generatedAt": "2026-11-14T22:30:05Z",
+  "commit": "5081e4297266413ec337ecfc256fa58b1916e85c",
   "runUrl": null,
-  "bootstrapSeconds": 75,
+  "bootstrapSeconds": 69,
   "versions": {
     "kubernetes": "v1.37.0",
     "crossplane": "2.4.3",
@@ -43,12 +43,64 @@
       "status": "pass"
     },
     {
+      "name": "every environment has its own cloud network",
+      "status": "pass"
+    },
+    {
+      "name": "VM ip 10.40.0.10 is inside its environment's network 10.40.0.0/24",
+      "status": "pass"
+    },
+    {
       "name": "same-namespace -> postgres allowed",
       "status": "pass"
     },
     {
       "name": "cross-tenant -> postgres dropped by NetworkPolicy",
       "status": "pass"
+    }
+  ],
+  "drills": [
+    {
+      "name": "Deleted default-deny NetworkPolicy is restored",
+      "alert": null,
+      "status": "pass",
+      "seconds": 5,
+      "note": "Crossplane re-created it"
+    },
+    {
+      "name": "VM converges despite failing cloud API calls",
+      "alert": null,
+      "status": "pass",
+      "seconds": 17,
+      "note": "provider retried through 3 injected 503s"
+    },
+    {
+      "name": "Exhausted pod quota raises an alert",
+      "alert": "GantryTenantQuotaNearLimit",
+      "status": "pass",
+      "seconds": 78,
+      "note": "firing"
+    },
+    {
+      "name": "Database blocked by quota raises an alert",
+      "alert": "GantryCompositeNotReady",
+      "status": "pass",
+      "seconds": 130,
+      "note": "firing"
+    },
+    {
+      "name": "Crash-looping container raises an alert",
+      "alert": "GantryTenantPodCrashLooping",
+      "status": "pass",
+      "seconds": 140,
+      "note": "firing"
+    },
+    {
+      "name": "Blocked database recovers once quota frees up",
+      "alert": null,
+      "status": "pass",
+      "seconds": 72,
+      "note": "became Ready without intervention"
     }
   ],
   "resources": [
@@ -58,17 +110,23 @@
       "namespace": null,
       "ready": true,
       "synced": true,
-      "created": "2026-11-14T21:18:46Z",
+      "created": "2026-11-14T22:23:48Z",
       "spec": {
         "crossplane": {
           "compositionRef": {
             "name": "appenvironment"
           },
           "compositionRevisionRef": {
-            "name": "appenvironment-09684c4"
+            "name": "appenvironment-f83eefd"
           },
           "compositionUpdatePolicy": "Automatic",
           "resourceRefs": [
+            {
+              "apiVersion": "cloud.gantry.internal/v1alpha1",
+              "kind": "Network",
+              "name": "network",
+              "namespace": "checkout-dev"
+            },
             {
               "apiVersion": "networking.k8s.io/v1",
               "kind": "NetworkPolicy",
@@ -127,6 +185,9 @@
       },
       "status": {
         "namespace": "checkout-dev",
+        "network": {
+          "cidr": "10.40.0.0/24"
+        },
         "quota": {
           "cpu": "2",
           "memory": "4Gi",
@@ -134,6 +195,10 @@
         }
       },
       "composed": [
+        {
+          "kind": "Network",
+          "name": "network"
+        },
         {
           "kind": "NetworkPolicy",
           "name": "allow-dns"
@@ -174,17 +239,23 @@
       "namespace": null,
       "ready": true,
       "synced": true,
-      "created": "2026-11-14T21:18:46Z",
+      "created": "2026-11-14T22:23:49Z",
       "spec": {
         "crossplane": {
           "compositionRef": {
             "name": "appenvironment"
           },
           "compositionRevisionRef": {
-            "name": "appenvironment-09684c4"
+            "name": "appenvironment-f83eefd"
           },
           "compositionUpdatePolicy": "Automatic",
           "resourceRefs": [
+            {
+              "apiVersion": "cloud.gantry.internal/v1alpha1",
+              "kind": "Network",
+              "name": "network",
+              "namespace": "search-dev"
+            },
             {
               "apiVersion": "networking.k8s.io/v1",
               "kind": "NetworkPolicy",
@@ -234,6 +305,9 @@
       },
       "status": {
         "namespace": "search-dev",
+        "network": {
+          "cidr": "10.40.1.0/24"
+        },
         "quota": {
           "cpu": "4",
           "memory": "8Gi",
@@ -241,6 +315,10 @@
         }
       },
       "composed": [
+        {
+          "kind": "Network",
+          "name": "network"
+        },
         {
           "kind": "NetworkPolicy",
           "name": "allow-dns"
@@ -277,7 +355,7 @@
       "namespace": "checkout-dev",
       "ready": true,
       "synced": true,
-      "created": "2026-11-14T21:19:18Z",
+      "created": "2026-11-14T22:24:54Z",
       "spec": {
         "crossplane": {
           "compositionRef": {
@@ -318,6 +396,44 @@
         {
           "kind": "Cluster",
           "name": "orders"
+        }
+      ]
+    },
+    {
+      "kind": "VirtualMachine",
+      "name": "worker",
+      "namespace": "checkout-dev",
+      "ready": true,
+      "synced": true,
+      "created": "2026-11-14T22:24:53Z",
+      "spec": {
+        "crossplane": {
+          "compositionRef": {
+            "name": "virtualmachine-gantry-cloud"
+          },
+          "compositionRevisionRef": {
+            "name": "virtualmachine-gantry-cloud-690738c"
+          },
+          "compositionUpdatePolicy": "Automatic",
+          "resourceRefs": [
+            {
+              "apiVersion": "cloud.gantry.internal/v1alpha1",
+              "kind": "Instance",
+              "name": "worker"
+            }
+          ]
+        },
+        "size": "small"
+      },
+      "status": {
+        "cloudId": "vm-7ccffb862635",
+        "ip": "10.40.0.10",
+        "state": "running"
+      },
+      "composed": [
+        {
+          "kind": "Instance",
+          "name": "worker"
         }
       ]
     }

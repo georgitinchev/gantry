@@ -85,3 +85,20 @@ func TestFaultInjection(t *testing.T) {
 		t.Fatalf("metrics missing faulted request:\n%s", rec.Body)
 	}
 }
+
+func TestFailNextIsDeterministic(t *testing.T) {
+	c, _ := newCloud(10)
+	h := NewServer(c, token).Handler()
+	do(t, h, "PUT", "/admin/faults", `{"failNext":2}`, token)
+	if rec := do(t, h, "GET", "/v1/networks", "", token); rec.Code != 200 {
+		t.Fatalf("reads do not consume failNext, got %d", rec.Code)
+	}
+	for k := 0; k < 2; k++ {
+		if rec := do(t, h, "POST", "/v1/networks", `{"name":"n"}`, token); rec.Code != 503 {
+			t.Fatalf("write %d: want 503, got %d", k, rec.Code)
+		}
+	}
+	if rec := do(t, h, "POST", "/v1/networks", `{"name":"n"}`, token); rec.Code != 201 {
+		t.Fatalf("third write should succeed, got %d", rec.Code)
+	}
+}

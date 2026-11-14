@@ -32,7 +32,7 @@ flowchart LR
 | `PATCH /v1/instances/{id}` | resize only while running; passes through `resizing` |
 | `DELETE /v1/networks/{id}` | refused with `409 in_use` while instances exist |
 | duplicate names | `409 conflict` that **returns the existing object** so clients can adopt it |
-| `PUT /admin/faults` | inject a 503 error rate and latency into write calls |
+| `PUT /admin/faults` | inject latency, a random 503 rate, or `failNext: N` to fail exactly the next N writes |
 | `GET /metrics` | requests by route and code, instances by state |
 
 ## provider-gantry-cloud
@@ -54,5 +54,6 @@ crossplane-runtime's managed reconciler.
 - **Deletes** tolerate `404`. Deleting a network that still has instances
   retries until they're gone.
 
-All of it has unit tests with a fake cloud. The nightly drill turns on a 60%
-error rate for writes and checks that a VM still converges.
+All of it has unit tests with a fake cloud. The nightly drill makes the cloud
+reject the next three write calls (`failNext: 3`) and checks that a VM still
+converges, with at least three retries observed in the cloud's metrics.

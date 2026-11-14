@@ -41,9 +41,9 @@ cloud() { curl -fsS -H "Authorization: Bearer $cloud_token" -H 'content-type: ap
 errors_503() { curl -fsS localhost:18080/metrics | awk '/gantry_cloud_requests_total/ && /code="503"/ {s += $NF} END {print s + 0}'; }
 
 # 2-5. Start the remaining faults together, then wait for each outcome.
-log "fault: gantry-cloud fails 60% of write calls; request a VM anyway"
+log "fault: gantry-cloud fails the next 3 write calls; request a VM anyway"
 before_503=$(errors_503)
-cloud -X PUT localhost:18080/admin/faults -d '{"errorRate":0.6}' >/dev/null
+cloud -X PUT localhost:18080/admin/faults -d '{"failNext":3}' >/dev/null || { echo "could not inject cloud fault" >&2; exit 1; }
 t_flaky=$SECONDS
 kubectl apply -f - >/dev/null <<YAML
 apiVersion: platform.gantry.internal/v1alpha1
@@ -98,22 +98,30 @@ metadata: {name: drill-blocked, namespace: search-dev}
 spec: {size: small}
 YAML
 
-s=$(wait_since $t_crash 420 firing GantryTenantPodCrashLooping '.labels.pod == "drill-crash"') \
+# Wait for every outcome concurrently, so each is timed from its own fault.
+pids=()
+( s=$(wait_since $t_crash 420 firing GantryTenantPodCrashLooping '.labels.pod == "drill-crash"') \
   && emit "Crash-looping container raises an alert" GantryTenantPodCrashLooping pass "$s" "firing" \
-  || emit "Crash-looping container raises an alert" GantryTenantPodCrashLooping fail -1 "not firing within 420s"
-
-s=$(wait_since $t_quota 420 firing GantryTenantQuotaNearLimit '.labels.namespace == "search-dev" and .labels.resource == "pods"') \
+  || emit "Crash-looping container raises an alert" GantryTenantPodCrashLooping fail -1 "not firing within 420s" ) &
+pids+=($!)
+( s=$(wait_since $t_quota 420 firing GantryTenantQuotaNearLimit '.labels.namespace == "search-dev" and .labels.resource == "pods"') \
   && emit "Exhausted pod quota raises an alert" GantryTenantQuotaNearLimit pass "$s" "firing" \
-  || emit "Exhausted pod quota raises an alert" GantryTenantQuotaNearLimit fail -1 "not firing within 420s"
-
-s=$(wait_since $t_blocked 480 firing GantryCompositeNotReady '.labels.name == "drill-blocked"') \
+  || emit "Exhausted pod quota raises an alert" GantryTenantQuotaNearLimit fail -1 "not firing within 420s" ) &
+pids+=($!)
+( s=$(wait_since $t_blocked 480 firing GantryCompositeNotReady '.labels.name == "drill-blocked"') \
   && emit "Database blocked by quota raises an alert" GantryCompositeNotReady pass "$s" "firing" \
-  || emit "Database blocked by quota raises an alert" GantryCompositeNotReady fail -1 "not firing within 420s"
-
-s=$(wait_since $t_flaky 420 sh -c '[ "$(kubectl -n search-dev get virtualmachine drill-flaky -o jsonpath="{.status.conditions[?(@.type==\"Ready\")].status}")" = True ]') \
-  && emit "VM converges despite a flaky cloud API" "" pass "$s" "provider retried through $(( $(errors_503) - before_503 )) injected 503s" \
-  || emit "VM converges despite a flaky cloud API" "" fail -1 "not Ready within 420s"
-cloud -X PUT localhost:18080/admin/faults -d '{"errorRate":0}' >/dev/null
+  || emit "Database blocked by quota raises an alert" GantryCompositeNotReady fail -1 "not firing within 480s" ) &
+pids+=($!)
+( s=$(wait_since $t_flaky 300 sh -c '[ "$(kubectl -n search-dev get virtualmachine drill-flaky -o jsonpath="{.status.conditions[?(@.type==\"Ready\")].status}")" = True ]')
+  retries=$(( $(errors_503) - before_503 ))
+  if [[ "$s" != -1 && $retries -ge 3 ]]; then
+    emit "VM converges despite failing cloud API calls" "" pass "$s" "provider retried through $retries injected 503s"
+  else
+    emit "VM converges despite failing cloud API calls" "" fail "$s" "ready=$s, injected 503s seen=$retries (want >= 3)"
+  fi ) &
+pids+=($!)
+wait "${pids[@]}" # not a bare wait: the port-forward runs in the background too
+cloud -X PUT localhost:18080/admin/faults -d '{"failNext":0,"errorRate":0}' >/dev/null
 
 # Recovery: free the quota and time the blocked database becoming Ready.
 log "recovery: remove the filler and wait for the blocked database"

@@ -18,6 +18,7 @@ import (
 type Faults struct {
 	ErrorRate float64 `json:"errorRate"` // 0..1 chance of a 503
 	LatencyMs int     `json:"latencyMs"`
+	FailNext  int     `json:"failNext"` // deterministically fail the next N write calls
 }
 
 type Server struct {
@@ -73,13 +74,18 @@ func (s *Server) auth(next http.Handler) http.Handler {
 
 func (s *Server) inject(routes *http.ServeMux, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		write := r.Method != http.MethodGet
 		s.mu.Lock()
 		f := s.faults
+		forced := write && s.faults.FailNext > 0
+		if forced {
+			s.faults.FailNext--
+		}
 		s.mu.Unlock()
 		if f.LatencyMs > 0 {
 			time.Sleep(time.Duration(f.LatencyMs) * time.Millisecond)
 		}
-		if r.Method != http.MethodGet && f.ErrorRate > 0 && rand.Float64() < f.ErrorRate {
+		if forced || (write && f.ErrorRate > 0 && rand.Float64() < f.ErrorRate) {
 			_, r.Pattern = routes.Handler(r) // label the metric with the real route
 			writeError(w, http.StatusServiceUnavailable, "unavailable", "injected fault: try again")
 			return
@@ -211,8 +217,8 @@ func (s *Server) setFaults(w http.ResponseWriter, r *http.Request) {
 	if !decode(w, r, &f) {
 		return
 	}
-	if f.ErrorRate < 0 || f.ErrorRate > 1 || f.LatencyMs < 0 || f.LatencyMs > 10_000 {
-		writeError(w, http.StatusBadRequest, "invalid", "errorRate must be 0..1, latencyMs 0..10000")
+	if f.ErrorRate < 0 || f.ErrorRate > 1 || f.LatencyMs < 0 || f.LatencyMs > 10_000 || f.FailNext < 0 || f.FailNext > 100 {
+		writeError(w, http.StatusBadRequest, "invalid", "errorRate must be 0..1, latencyMs 0..10000, failNext 0..100")
 		return
 	}
 	s.mu.Lock()
