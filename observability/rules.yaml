@@ -1,0 +1,62 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: gantry
+  namespace: monitoring
+spec:
+  groups:
+    - name: gantry.platform
+      rules:
+        - alert: GantryCompositeNotReady
+          expr: gantry_composite_condition{type="Ready"} == 0
+          for: 2m
+          labels:
+            severity: warning
+          annotations:
+            summary: "{{ $labels.customresource_kind }} {{ $labels.name }} has not been Ready for 2 minutes"
+            description: >-
+              Crossplane reports the composite resource as not Ready. Something it
+              composes is missing or unhealthy, so the team's request is not fulfilled.
+            runbook_url: https://github.com/georgitinchev/gantry/blob/main/docs/runbooks/composite-not-ready.md
+
+    - name: gantry.tenants
+      rules:
+        - record: gantry:tenant_quota_usage:ratio
+          expr: |
+            (
+              kube_resourcequota{type="used"}
+                / ignoring(type)
+              (kube_resourcequota{type="hard"} > 0)
+            )
+            * on(namespace) group_left(label_platform_gantry_internal_team)
+              kube_namespace_labels{label_platform_gantry_internal_team!=""}
+
+        - alert: GantryTenantQuotaNearLimit
+          expr: gantry:tenant_quota_usage:ratio > 0.9
+          for: 1m
+          labels:
+            severity: warning
+          annotations:
+            summary: "{{ $labels.namespace }} uses {{ $value | humanizePercentage }} of its {{ $labels.resource }} quota"
+            description: >-
+              New pods, volumes or databases in this environment will be rejected or
+              stay pending once the quota is reached.
+            runbook_url: https://github.com/georgitinchev/gantry/blob/main/docs/runbooks/tenant-quota-near-limit.md
+
+        - alert: GantryTenantPodCrashLooping
+          expr: |
+            # max_over_time: the waiting reason flips off on every restart attempt,
+            # which would reset `for` on a plain instant query (found by the nightly drill).
+            max by (namespace, pod, container) (
+              max_over_time(kube_pod_container_status_waiting_reason{reason="CrashLoopBackOff"}[5m])
+            )
+            * on(namespace) group_left(label_platform_gantry_internal_team)
+              kube_namespace_labels{label_platform_gantry_internal_team!=""}
+            == 1
+          for: 1m
+          labels:
+            severity: warning
+          annotations:
+            summary: "{{ $labels.namespace }}/{{ $labels.pod }} ({{ $labels.container }}) is crash-looping"
+            description: A container in a tenant environment keeps exiting and is in CrashLoopBackOff.
+            runbook_url: https://github.com/georgitinchev/gantry/blob/main/docs/runbooks/tenant-pod-crashlooping.md

@@ -1,0 +1,84 @@
+# kube-prometheus-stack, trimmed to what gantry alerts on.
+# No Grafana or Alertmanager in CI: alerts are asserted through the Prometheus API.
+fullnameOverride: kps
+defaultRules:
+  create: false
+grafana:
+  enabled: false
+alertmanager:
+  enabled: false
+nodeExporter:
+  enabled: false
+kubeApiServer:
+  enabled: false
+kubelet:
+  enabled: false
+kubeControllerManager:
+  enabled: false
+coreDns:
+  enabled: false
+kubeEtcd:
+  enabled: false
+kubeScheduler:
+  enabled: false
+kubeProxy:
+  enabled: false
+
+prometheus:
+  prometheusSpec:
+    scrapeInterval: 15s
+    evaluationInterval: 15s
+    retention: 6h
+    ruleSelectorNilUsesHelmValues: false
+    serviceMonitorSelectorNilUsesHelmValues: false
+    podMonitorSelectorNilUsesHelmValues: false
+    resources:
+      requests: {cpu: 100m, memory: 400Mi}
+
+kube-state-metrics:
+  # Lets alerts join on the tenant label of a namespace.
+  metricLabelsAllowlist:
+    - namespaces=[platform.gantry.internal/team]
+  rbac:
+    extraRules:
+      - apiGroups: [platform.gantry.internal]
+        resources: [appenvironments, postgresinstances]
+        verbs: [list, watch]
+  # Exposes Crossplane composite conditions as metrics:
+  #   gantry_composite_condition{customresource_kind, name, namespace, type} = 1 | 0
+  customResourceState:
+    enabled: true
+    config:
+      kind: CustomResourceStateMetrics
+      spec:
+        resources:
+          - groupVersionKind: {group: platform.gantry.internal, version: v1alpha1, kind: AppEnvironment}
+            metricNamePrefix: gantry
+            labelsFromPath:
+              name: [metadata, name]
+              namespace: [metadata, name] # an AppEnvironment owns the namespace of the same name
+            metrics:
+              - name: composite_condition
+                help: Condition status of a gantry composite resource (1 = True).
+                each:
+                  type: Gauge
+                  gauge:
+                    path: [status, conditions]
+                    labelsFromPath:
+                      type: [type]
+                    valueFrom: [status]
+          - groupVersionKind: {group: platform.gantry.internal, version: v1alpha1, kind: PostgresInstance}
+            metricNamePrefix: gantry
+            labelsFromPath:
+              name: [metadata, name]
+              namespace: [metadata, namespace]
+            metrics:
+              - name: composite_condition
+                help: Condition status of a gantry composite resource (1 = True).
+                each:
+                  type: Gauge
+                  gauge:
+                    path: [status, conditions]
+                    labelsFromPath:
+                      type: [type]
+                    valueFrom: [status]

@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
 # Writes a JSON snapshot of the platform for the portal's status page.
-# usage: hack/snapshot.sh <e2e-results.jsonl> <bootstrap-seconds> > snapshot.json
+# usage: hack/snapshot.sh <e2e-results.jsonl> <bootstrap-seconds> [drills.jsonl] > snapshot.json
 set -euo pipefail
 cd "$(dirname "$0")/.."
 results=${1:-/dev/null}
 bootstrap=${2:-0}
+drills=${3:-/dev/null}
 
 xrs=$(kubectl get appenvironment,postgresinstance -A -o json | jq '[.items[] | {
   kind, name: .metadata.name, namespace: (.metadata.namespace // null),
@@ -23,6 +24,7 @@ jq -n \
   --argjson xrs "$xrs" \
   --argjson composed "$composed" \
   --slurpfile checks <(cat "$results" 2>/dev/null || true) \
+  --slurpfile drills <(cat "$drills" 2>/dev/null || true) \
   --arg generatedAt "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
   --arg commit "${GITHUB_SHA:-$(git rev-parse HEAD)}" \
   --arg runUrl "${GITHUB_SERVER_URL:-}${GITHUB_RUN_ID:+/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}}" \
@@ -36,5 +38,6 @@ jq -n \
     bootstrapSeconds: $bootstrap,
     versions: {kubernetes: $k8s, crossplane: $crossplane, cloudnativepg: $cnpg, kyverno: $kyverno},
     checks: $checks,
+    drills: $drills,
     resources: [$xrs[] | . + {composed: ($composed["\(.kind)/\(.namespace // "")/\(.name)"] // [])}]
   }'

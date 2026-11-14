@@ -1,0 +1,120 @@
+# promtool unit tests: run with hack/test-rules.sh
+rule_files:
+  - rules.extracted.yaml
+evaluation_interval: 15s
+
+tests:
+  - name: composite not ready fires after 2m, not before
+    interval: 15s
+    input_series:
+      - series: 'gantry_composite_condition{customresource_kind="PostgresInstance",name="orders",namespace="checkout-dev",type="Ready"}'
+        values: '0x20'
+      - series: 'gantry_composite_condition{customresource_kind="AppEnvironment",name="checkout-dev",type="Ready"}'
+        values: '1x20'
+    alert_rule_test:
+      - eval_time: 1m
+        alertname: GantryCompositeNotReady
+        exp_alerts: []
+      - eval_time: 3m
+        alertname: GantryCompositeNotReady
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              customresource_kind: PostgresInstance
+              name: orders
+              namespace: checkout-dev
+              type: Ready
+            exp_annotations:
+              summary: PostgresInstance orders has not been Ready for 2 minutes
+              description: >-
+                Crossplane reports the composite resource as not Ready. Something it
+                composes is missing or unhealthy, so the team's request is not fulfilled.
+              runbook_url: https://github.com/georgitinchev/gantry/blob/main/docs/runbooks/composite-not-ready.md
+
+  - name: quota alert only for tenant namespaces above 90%
+    interval: 15s
+    input_series:
+      - series: 'kube_resourcequota{namespace="search-dev",resource="pods",type="used"}'
+        values: '19x20'
+      - series: 'kube_resourcequota{namespace="search-dev",resource="pods",type="hard"}'
+        values: '20x20'
+      - series: 'kube_resourcequota{namespace="search-dev",resource="requests.cpu",type="used"}'
+        values: '1x20'
+      - series: 'kube_resourcequota{namespace="search-dev",resource="requests.cpu",type="hard"}'
+        values: '2x20'
+      - series: 'kube_namespace_labels{namespace="search-dev",label_platform_gantry_internal_team="search"}'
+        values: '1x20'
+      # a non-tenant namespace at 100% must not alert
+      - series: 'kube_resourcequota{namespace="kube-system",resource="pods",type="used"}'
+        values: '10x20'
+      - series: 'kube_resourcequota{namespace="kube-system",resource="pods",type="hard"}'
+        values: '10x20'
+      - series: 'kube_namespace_labels{namespace="kube-system"}'
+        values: '1x20'
+    alert_rule_test:
+      - eval_time: 2m
+        alertname: GantryTenantQuotaNearLimit
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              namespace: search-dev
+              resource: pods
+              label_platform_gantry_internal_team: search
+            exp_annotations:
+              summary: search-dev uses 95% of its pods quota
+              description: >-
+                New pods, volumes or databases in this environment will be rejected or
+                stay pending once the quota is reached.
+              runbook_url: https://github.com/georgitinchev/gantry/blob/main/docs/runbooks/tenant-quota-near-limit.md
+
+  - name: crash loop in a tenant namespace
+    interval: 15s
+    input_series:
+      - series: 'kube_pod_container_status_waiting_reason{namespace="checkout-dev",pod="api-1",container="api",reason="CrashLoopBackOff"}'
+        values: '0 0 1x20'
+      - series: 'kube_namespace_labels{namespace="checkout-dev",label_platform_gantry_internal_team="checkout"}'
+        values: '1x22'
+      - series: 'kube_pod_container_status_waiting_reason{namespace="kube-system",pod="x",container="x",reason="CrashLoopBackOff"}'
+        values: '1x22'
+      - series: 'kube_namespace_labels{namespace="kube-system"}'
+        values: '1x22'
+    alert_rule_test:
+      - eval_time: 30s
+        alertname: GantryTenantPodCrashLooping
+        exp_alerts: []
+      - eval_time: 2m
+        alertname: GantryTenantPodCrashLooping
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              namespace: checkout-dev
+              pod: api-1
+              container: api
+              label_platform_gantry_internal_team: checkout
+            exp_annotations:
+              summary: checkout-dev/api-1 (api) is crash-looping
+              description: A container in a tenant environment keeps exiting and is in CrashLoopBackOff.
+              runbook_url: https://github.com/georgitinchev/gantry/blob/main/docs/runbooks/tenant-pod-crashlooping.md
+
+  - name: crash loop that flaps between restarts still fires
+    interval: 15s
+    input_series:
+      # CrashLoopBackOff, then a restart attempt (0), repeatedly
+      - series: 'kube_pod_container_status_waiting_reason{namespace="checkout-dev",pod="flappy",container="app",reason="CrashLoopBackOff"}'
+        values: '1 1 1 0 1 1 1 0 1 1 1 0 1 1 1 0 1 1 1 0'
+      - series: 'kube_namespace_labels{namespace="checkout-dev",label_platform_gantry_internal_team="checkout"}'
+        values: '1x20'
+    alert_rule_test:
+      - eval_time: 3m
+        alertname: GantryTenantPodCrashLooping
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              namespace: checkout-dev
+              pod: flappy
+              container: app
+              label_platform_gantry_internal_team: checkout
+            exp_annotations:
+              summary: checkout-dev/flappy (app) is crash-looping
+              description: A container in a tenant environment keeps exiting and is in CrashLoopBackOff.
+              runbook_url: https://github.com/georgitinchev/gantry/blob/main/docs/runbooks/tenant-pod-crashlooping.md

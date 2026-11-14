@@ -2,6 +2,7 @@ import 'server-only';
 import sample from '@/data/snapshot.sample.json';
 
 export type Check = { name: string; status: 'pass' | 'fail' };
+export type Drill = { name: string; alert: string | null; status: 'pass' | 'fail'; seconds: number; note: string };
 export type Resource = {
   kind: string;
   name: string;
@@ -20,6 +21,7 @@ export type Snapshot = {
   bootstrapSeconds: number;
   versions: Record<string, string>;
   checks: Check[];
+  drills?: Drill[];
   resources: Resource[];
   source: 'live' | 'sample';
 };
@@ -39,7 +41,15 @@ export async function getSnapshot(): Promise<Snapshot> {
 }
 
 export function overall(s: Snapshot) {
-  const failed = s.checks.filter((c) => c.status !== 'pass').length;
+  const failed = [...s.checks, ...(s.drills ?? [])].filter((c) => c.status !== 'pass').length;
   const notReady = s.resources.filter((r) => !r.ready).length;
   return { ok: failed === 0 && notReady === 0 && s.checks.length > 0, failed, notReady };
 }
+
+/** Alert name -> runbook page. Kept explicit; a test checks it against observability/rules.yaml. */
+export const runbooks: Record<string, string> = {
+  GantryCompositeNotReady: 'composite-not-ready',
+  GantryTenantQuotaNearLimit: 'tenant-quota-near-limit',
+  GantryTenantPodCrashLooping: 'tenant-pod-crashlooping',
+};
+export const runbookFor = (alert: string) => (runbooks[alert] ? `/docs/runbooks/${runbooks[alert]}` : '/docs/runbooks');

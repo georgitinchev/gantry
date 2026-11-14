@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { StatusChip } from '@/components/ui';
-import { getSnapshot, overall } from '@/lib/snapshot';
+import { getSnapshot, overall, runbookFor } from '@/lib/snapshot';
+import Link from 'next/link';
 import { repoUrl } from '@/lib/site';
 import { ago } from '@/lib/time';
 
@@ -49,6 +50,28 @@ export default async function StatusPage() {
               </li>
             ))}
           </ul>
+
+          {s.drills && s.drills.length > 0 && (
+            <>
+              <h2 className="annot mt-10">Failure drills</h2>
+              <p className="mt-1 text-sm text-ink-2">Faults injected on purpose; each alert must fire and link to a runbook.</p>
+              <ul className="mt-3 divide-y divide-line rounded-lg border border-line">
+                {s.drills.map((d) => (
+                  <li key={d.name} className="grid gap-1 px-4 py-3 text-sm">
+                    <div className="flex items-center justify-between gap-3">
+                      <span>{d.name}</span>
+                      <StatusChip ok={d.status === 'pass'}>{d.status === 'pass' ? `${d.seconds}s` : 'fail'}</StatusChip>
+                    </div>
+                    {d.alert && (
+                      <Link href={runbookFor(d.alert)} className="annot w-fit underline decoration-line underline-offset-4 hover:!text-ink">
+                        {d.alert} → runbook
+                      </Link>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
 
           <h2 className="annot mt-10">Versions</h2>
           <dl className="mt-3 divide-y divide-line rounded-lg border border-line">

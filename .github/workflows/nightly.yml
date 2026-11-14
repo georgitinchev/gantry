@@ -13,7 +13,7 @@ permissions:
 jobs:
   verify:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
     permissions:
       contents: write # push snapshot.json to the status branch
     steps:
@@ -32,6 +32,8 @@ jobs:
         id: verify
         continue-on-error: true
         run: ./hack/verify.sh "$RUNNER_TEMP/snapshot.json"
+        env:
+          DRILLS: "1"
       - name: publish snapshot
         if: always()
         run: |

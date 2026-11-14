@@ -36,3 +36,4 @@ describe('catalog requests', () => {
     expect(validate(env, { team: 'checkout', name: 'search-dev', namespace: '', values: { size: 'small' } }).name).toMatch(/checkout-/);
   });
 });
+

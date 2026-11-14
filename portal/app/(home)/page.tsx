@@ -33,9 +33,9 @@ const roadmap = [
   { title: 'Proof on every PR', state: 'done', note: 'kind e2e with isolation checks' },
   { title: 'Portal + docs', state: 'done', note: 'catalog generated from the XRDs' },
   { title: 'Live demo', state: 'done', note: 'rate-limited, runs a real reconcile' },
-  { title: 'Observability + runbooks', state: 'next', note: 'alerts that link to tested runbooks' },
+  { title: 'Observability + runbooks', state: 'done', note: 'alerts that link to tested runbooks' },
   { title: 'Mock cloud + own provider', state: 'next', note: 'networks, IPs, VMs via a custom Crossplane provider' },
-  { title: 'Failure injection', state: 'next', note: 'nightly faults, alerts must fire' },
+  { title: 'Failure injection', state: 'done', note: 'nightly faults, alerts must fire' },
 ];
 
 export default async function Home() {
