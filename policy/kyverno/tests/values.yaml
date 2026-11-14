@@ -1,0 +1,6 @@
+apiVersion: cli.kyverno.io/v1alpha1
+kind: Values
+metadata: {name: values}
+namespaceSelector:
+  - name: team-dev
+    labels: {platform.gantry.internal/team: team}

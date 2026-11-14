@@ -1,0 +1,8 @@
+apiVersion: platform.gantry.internal/v1alpha1
+kind: AppEnvironment
+metadata:
+  name: billing-dev
+spec:
+  team: billing
+  size: huge
+  exposur: public

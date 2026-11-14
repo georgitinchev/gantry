@@ -2,6 +2,9 @@ apiVersion: apiextensions.crossplane.io/v2
 kind: CompositeResourceDefinition
 metadata:
   name: appenvironments.platform.gantry.internal
+  annotations:
+    # gantry-lint: requests of this kind live at requests/<team>/appenvironment[-<suffix>].yaml
+    platform.gantry.internal/file-prefix: appenvironment
 spec:
   group: platform.gantry.internal
   names:

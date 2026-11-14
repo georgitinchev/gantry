@@ -1,0 +1,47 @@
+apiVersion: platform.gantry.internal/v1alpha1
+kind: AppEnvironment
+metadata: {name: team-large-unapproved}
+spec: {team: team, size: large}
+---
+apiVersion: platform.gantry.internal/v1alpha1
+kind: AppEnvironment
+metadata:
+  name: team-large-approved
+  annotations: {platform.gantry.internal/approved-by: platform-team}
+spec: {team: team, size: large}
+---
+apiVersion: platform.gantry.internal/v1alpha1
+kind: AppEnvironment
+metadata: {name: team-small}
+spec: {team: team, size: small}
+---
+apiVersion: v1
+kind: Pod
+metadata: {name: pinned, namespace: team-dev}
+spec:
+  containers: [{name: c, image: "ghcr.io/cloudnative-pg/postgresql:17"}]
+---
+apiVersion: v1
+kind: Pod
+metadata: {name: digest, namespace: team-dev}
+spec:
+  containers: [{name: c, image: "registry.k8s.io/pause@sha256:7031c1b283388d2c2e09b57badb803c05ebed362dc88d84b480cc47f72a21097"}]
+---
+apiVersion: v1
+kind: Pod
+metadata: {name: latest, namespace: team-dev}
+spec:
+  containers: [{name: c, image: "ghcr.io/cloudnative-pg/postgresql:latest"}]
+---
+apiVersion: v1
+kind: Pod
+metadata: {name: untagged, namespace: team-dev}
+spec:
+  containers: [{name: c, image: "docker.io/library/nginx"}]
+---
+apiVersion: v1
+kind: Pod
+metadata: {name: untrusted, namespace: team-dev}
+spec:
+  initContainers: [{name: i, image: "evil.example.com/miner:1.0"}]
+  containers: [{name: c, image: "ghcr.io/cloudnative-pg/postgresql:17"}]

@@ -33,6 +33,24 @@ else
   pass "non-compliant pod rejected by admission"
 fi
 
+# Server-side dry run of a pod that passes Pod Security, so only Kyverno can reject it.
+admit_pod() { # admit_pod <namespace> <image>
+  kubectl -n "$1" run "kyv-$RANDOM" --restart=Never --dry-run=server -o name --image="$2" \
+    --overrides='{"spec":{"securityContext":{"runAsNonRoot":true,"runAsUser":1000,"seccompProfile":{"type":"RuntimeDefault"}},"containers":[{"name":"c","image":"'"$2"'","securityContext":{"allowPrivilegeEscalation":false,"capabilities":{"drop":["ALL"]}}}]}}' 2>&1 || true
+}
+dry_apply() { kubectl apply --dry-run=server -f - 2>&1 || true; }
+
+echo "--- admission policy (kyverno)"
+admit_pod checkout-dev ghcr.io/cloudnative-pg/postgresql:17 | grep -q "pod/" \
+  && pass "pinned image from trusted registry admitted" || fail "compliant pod rejected"
+admit_pod checkout-dev ghcr.io/cloudnative-pg/postgresql:latest | grep -q "tenant-image-hygiene" \
+  && pass ":latest image rejected" || fail ":latest image admitted"
+admit_pod checkout-dev evil.example.com/miner:1.0 | grep -q "tenant-image-hygiene" \
+  && pass "untrusted registry rejected" || fail "untrusted registry admitted"
+printf 'apiVersion: platform.gantry.internal/v1alpha1\nkind: AppEnvironment\nmetadata: {name: search-big}\nspec: {team: search, size: large}\n' \
+  | dry_apply | grep -q "require-approval-for-large" \
+  && pass "unapproved large environment rejected" || fail "unapproved large environment admitted"
+
 echo "--- network isolation"
 host=orders-rw.checkout-dev.svc
 # pg_isready prints "accepting connections" or, when packets are dropped, "no response".

@@ -1,0 +1,63 @@
+apiVersion: apiextensions.crossplane.io/v2
+kind: CompositeResourceDefinition
+metadata:
+  name: postgresinstances.platform.gantry.internal
+  annotations:
+    # gantry-lint: requests of this kind live at requests/<team>/postgres[-<suffix>].yaml
+    platform.gantry.internal/file-prefix: postgres
+spec:
+  group: platform.gantry.internal
+  names:
+    kind: PostgresInstance
+    plural: postgresinstances
+    shortNames: [pg]
+  scope: Namespaced
+  versions:
+    - name: v1alpha1
+      served: true
+      referenceable: true
+      additionalPrinterColumns:
+        - name: SIZE
+          type: string
+          jsonPath: .spec.size
+        - name: VERSION
+          type: string
+          jsonPath: .spec.version
+        - name: ENDPOINT
+          type: string
+          jsonPath: .status.endpoint
+      schema:
+        openAPIV3Schema:
+          type: object
+          description: A managed PostgreSQL database, created inside the tenant's AppEnvironment.
+          properties:
+            spec:
+              type: object
+              required: [size]
+              properties:
+                size:
+                  type: string
+                  description: small = 1 instance; medium = primary + 1 streaming replica.
+                  enum: [small, medium]
+                version:
+                  type: string
+                  enum: ["16", "17", "18"]
+                  default: "17"
+                storageGB:
+                  type: integer
+                  minimum: 1
+                  maximum: 20
+                  default: 1
+                database:
+                  type: string
+                  pattern: "^[a-z][a-z0-9_]{0,30}$"
+                  default: app
+            status:
+              type: object
+              properties:
+                endpoint:
+                  type: string
+                credentialsSecret:
+                  type: string
+                instances:
+                  type: integer

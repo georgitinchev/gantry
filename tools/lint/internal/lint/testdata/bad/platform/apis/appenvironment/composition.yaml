@@ -1,0 +1,180 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: appenvironment
+  labels:
+    platform.gantry.internal/api: appenvironment
+spec:
+  compositeTypeRef:
+    apiVersion: platform.gantry.internal/v1alpha1
+    kind: AppEnvironment
+  mode: Pipeline
+  pipeline:
+    - step: render
+      functionRef:
+        name: function-go-templating
+      input:
+        apiVersion: gotemplating.fn.crossplane.io/v1beta1
+        kind: GoTemplate
+        source: Inline
+        inline:
+          template: |
+            {{- $xr := .observed.composite.resource }}
+            {{- $ns := $xr.metadata.name }}
+            {{- $spec := $xr.spec }}
+            {{- $exposure := default "internal" $spec.exposure }}
+            {{- $sizes := dict
+                  "small"  (dict "reqCpu" "1" "reqMem" "2Gi" "limCpu" "2" "limMem" "4Gi"  "pods" "10" "pvcs" "2" "storage" "10Gi")
+                  "medium" (dict "reqCpu" "2" "reqMem" "4Gi" "limCpu" "4" "limMem" "8Gi"  "pods" "20" "pvcs" "4" "storage" "25Gi")
+                  "large"  (dict "reqCpu" "4" "reqMem" "8Gi" "limCpu" "8" "limMem" "16Gi" "pods" "40" "pvcs" "8" "storage" "50Gi") }}
+            {{- $q := get $sizes $spec.size }}
+            ---
+            apiVersion: v1
+            kind: Namespace
+            metadata:
+              name: {{ $ns }}
+              labels:
+                platform.gantry.internal/team: {{ $spec.team }}
+                platform.gantry.internal/size: {{ $spec.size }}
+                platform.gantry.internal/exposure: {{ $exposure }}
+                pod-security.kubernetes.io/enforce: restricted
+                pod-security.kubernetes.io/warn: restricted
+              annotations:
+                gotemplating.fn.crossplane.io/composition-resource-name: namespace
+                gotemplating.fn.crossplane.io/ready: "True"
+            ---
+            apiVersion: v1
+            kind: ResourceQuota
+            metadata:
+              name: quota
+              namespace: {{ $ns }}
+              annotations:
+                gotemplating.fn.crossplane.io/composition-resource-name: quota
+                gotemplating.fn.crossplane.io/ready: "True"
+            spec:
+              hard:
+                requests.cpu: {{ $q.reqCpu | quote }}
+                requests.memory: {{ $q.reqMem }}
+                limits.cpu: {{ $q.limCpu | quote }}
+                limits.memory: {{ $q.limMem }}
+                pods: {{ $q.pods | quote }}
+                persistentvolumeclaims: {{ $q.pvcs | quote }}
+                requests.storage: {{ $q.storage }}
+            ---
+            apiVersion: v1
+            kind: LimitRange
+            metadata:
+              name: defaults
+              namespace: {{ $ns }}
+              annotations:
+                gotemplating.fn.crossplane.io/composition-resource-name: limits
+                gotemplating.fn.crossplane.io/ready: "True"
+            spec:
+              limits:
+                - type: Container
+                  defaultRequest: {cpu: 50m, memory: 64Mi}
+                  default: {cpu: 500m, memory: 512Mi}
+                  max: {cpu: {{ $q.limCpu | quote }}, memory: {{ $q.limMem }}}
+            ---
+            apiVersion: networking.k8s.io/v1
+            kind: NetworkPolicy
+            metadata:
+              name: default-deny
+              namespace: {{ $ns }}
+              annotations:
+                gotemplating.fn.crossplane.io/composition-resource-name: netpol-default-deny
+                gotemplating.fn.crossplane.io/ready: "True"
+            spec:
+              podSelector: {}
+              policyTypes: [Ingress, Egress]
+            ---
+            apiVersion: networking.k8s.io/v1
+            kind: NetworkPolicy
+            metadata:
+              name: allow-same-namespace
+              namespace: {{ $ns }}
+              annotations:
+                gotemplating.fn.crossplane.io/composition-resource-name: netpol-same-namespace
+                gotemplating.fn.crossplane.io/ready: "True"
+            spec:
+              podSelector: {}
+              policyTypes: [Ingress, Egress]
+              ingress:
+                - from: [{podSelector: {}}]
+              egress:
+                - to: [{podSelector: {}}]
+            ---
+            apiVersion: networking.k8s.io/v1
+            kind: NetworkPolicy
+            metadata:
+              name: allow-dns
+              namespace: {{ $ns }}
+              annotations:
+                gotemplating.fn.crossplane.io/composition-resource-name: netpol-dns
+                gotemplating.fn.crossplane.io/ready: "True"
+            spec:
+              podSelector: {}
+              policyTypes: [Egress]
+              egress:
+                - to:
+                    - namespaceSelector:
+                        matchLabels:
+                          kubernetes.io/metadata.name: kube-system
+                  ports:
+                    - {protocol: UDP, port: 53}
+                    - {protocol: TCP, port: 53}
+            ---
+            apiVersion: networking.k8s.io/v1
+            kind: NetworkPolicy
+            metadata:
+              name: allow-platform
+              namespace: {{ $ns }}
+              annotations:
+                gotemplating.fn.crossplane.io/composition-resource-name: netpol-platform
+                gotemplating.fn.crossplane.io/ready: "True"
+            spec:
+              podSelector: {}
+              policyTypes: [Ingress]
+              ingress:
+                - from:
+                    - namespaceSelector:
+                        matchLabels:
+                          platform.gantry.internal/role: monitoring
+                {{- if eq $exposure "public" }}
+                    - namespaceSelector:
+                        matchLabels:
+                          platform.gantry.internal/role: gateway
+                {{- end }}
+            {{- if $spec.owners }}
+            ---
+            apiVersion: rbac.authorization.k8s.io/v1
+            kind: RoleBinding
+            metadata:
+              name: tenant-owners
+              namespace: {{ $ns }}
+              annotations:
+                gotemplating.fn.crossplane.io/composition-resource-name: owners
+                gotemplating.fn.crossplane.io/ready: "True"
+            roleRef:
+              apiGroup: rbac.authorization.k8s.io
+              kind: ClusterRole
+              name: gantry:tenant
+            subjects:
+              {{- range $spec.owners }}
+              - apiGroup: rbac.authorization.k8s.io
+                kind: User
+                name: {{ . }}
+              {{- end }}
+            {{- end }}
+            ---
+            apiVersion: platform.gantry.internal/v1alpha1
+            kind: AppEnvironment
+            status:
+              namespace: {{ $ns }}
+              quota:
+                cpu: {{ $q.limCpu | quote }}
+                memory: {{ $q.limMem }}
+                pods: {{ $q.pods | quote }}
+    - step: ready
+      functionRef:
+        name: function-auto-ready

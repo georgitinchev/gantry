@@ -1,0 +1,7 @@
+apiVersion: platform.gantry.internal/v1alpha1
+kind: AppEnvironment
+metadata:
+  name: search-dev
+spec:
+  team: search
+  size: large

@@ -1,0 +1,22 @@
+# Large environments cost 4 budget points; they need a named approver,
+# recorded on the request itself so the decision is reviewable in Git.
+apiVersion: policies.kyverno.io/v1
+kind: ValidatingPolicy
+metadata:
+  name: require-approval-for-large
+  annotations:
+    policies.kyverno.io/title: Approval for large environments
+    policies.kyverno.io/category: Governance
+spec:
+  validationActions: [Deny]
+  matchConstraints:
+    resourceRules:
+      - apiGroups: [platform.gantry.internal]
+        apiVersions: [v1alpha1]
+        operations: [CREATE, UPDATE]
+        resources: [appenvironments]
+  validations:
+    - expression: >-
+        object.spec.size != 'large' ||
+        object.metadata.?annotations.orValue({}).exists(k, k == 'platform.gantry.internal/approved-by')
+      message: large AppEnvironments need the platform.gantry.internal/approved-by annotation

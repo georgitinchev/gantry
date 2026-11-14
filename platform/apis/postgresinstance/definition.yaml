@@ -2,6 +2,9 @@ apiVersion: apiextensions.crossplane.io/v2
 kind: CompositeResourceDefinition
 metadata:
   name: postgresinstances.platform.gantry.internal
+  annotations:
+    # gantry-lint: requests of this kind live at requests/<team>/postgres[-<suffix>].yaml
+    platform.gantry.internal/file-prefix: postgres
 spec:
   group: platform.gantry.internal
   names:

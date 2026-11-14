@@ -1,0 +1,4 @@
+apiVersion: platform.gantry.internal/v1alpha1
+kind: RedisCache
+metadata:
+  name: cache

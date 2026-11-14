@@ -1,0 +1,7 @@
+apiVersion: platform.gantry.internal/v1alpha1
+kind: AppEnvironment
+metadata:
+  name: payments-prod
+spec:
+  team: checkout
+  size: small

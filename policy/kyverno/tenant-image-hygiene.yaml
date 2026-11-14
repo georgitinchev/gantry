@@ -1,0 +1,31 @@
+# Applies to every pod in a tenant namespace (anything an AppEnvironment created).
+apiVersion: policies.kyverno.io/v1
+kind: ValidatingPolicy
+metadata:
+  name: tenant-image-hygiene
+  annotations:
+    policies.kyverno.io/title: Pinned images from trusted registries
+    policies.kyverno.io/category: Supply chain
+spec:
+  validationActions: [Deny]
+  matchConstraints:
+    resourceRules:
+      - apiGroups: [""]
+        apiVersions: [v1]
+        operations: [CREATE, UPDATE]
+        resources: [pods]
+    namespaceSelector:
+      matchExpressions:
+        - key: platform.gantry.internal/team
+          operator: Exists
+  variables:
+    - name: images
+      expression: >-
+        (object.spec.containers + object.spec.?initContainers.orValue([])).map(c, c.image)
+  validations:
+    - expression: >-
+        variables.images.all(i, ['ghcr.io/', 'registry.k8s.io/', 'quay.io/', 'docker.io/library/'].exists(p, i.startsWith(p)))
+      message: images must come from ghcr.io, registry.k8s.io, quay.io or docker.io/library
+    - expression: >-
+        variables.images.all(i, i.contains('@sha256:') || (i.split('/').last().orValue('').contains(':') && !i.endsWith(':latest')))
+      message: images must be pinned to a version tag or digest, never :latest
