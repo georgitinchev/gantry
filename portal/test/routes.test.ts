@@ -21,6 +21,7 @@ vi.mock('@/lib/demo/github', () => ({
 const { POST: startDemo } = await import('@/app/api/demo/route');
 const { GET: getDemo } = await import('@/app/api/demo/[id]/route');
 const { POST: postEvent } = await import('@/app/api/demo/[id]/events/route');
+const { POST: heartbeat } = await import('@/app/api/heartbeat/route');
 
 const origin = 'https://gantry.example';
 const body = { size: 'small', exposure: 'internal', postgres: true, version: '17' };
@@ -98,5 +99,28 @@ describe('demo API', () => {
   it('does not leak runs for malformed ids', async () => {
     const res = await getDemo(new Request(`${origin}/api/demo/../../etc`), { params: Promise.resolve({ id: '../../etc' }) });
     expect(res.status).toBe(404);
+  });
+});
+
+describe('heartbeat', () => {
+  beforeEach(() => {
+    store = memoryStore();
+  });
+  const hb = (secretToUse: string) => {
+    const raw = '{"source":"nightly"}';
+    const ts = Math.floor(Date.now() / 1000);
+    return heartbeat(new Request(`${origin}/api/heartbeat`, {
+      method: 'POST',
+      headers: { 'x-gantry-timestamp': String(ts), 'x-gantry-signature': sign(secretToUse, ts, raw) },
+      body: raw,
+    }));
+  };
+  it('writes a key when signed', async () => {
+    expect((await hb(callbackSecret)).status).toBe(200);
+    expect(await store.get('demo:heartbeat')).toBeTruthy();
+  });
+  it('rejects unsigned callers so the quota cannot be burned', async () => {
+    expect((await hb('x'.repeat(32))).status).toBe(401);
+    expect(await store.get('demo:heartbeat')).toBeNull();
   });
 });

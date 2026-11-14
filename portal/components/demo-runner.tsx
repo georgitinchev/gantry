@@ -22,6 +22,7 @@ export function DemoRunner({ enabled, user }: { enabled: boolean; user: User }) 
   const [error, setError] = useState<string | null>(null);
   const [starting, setStarting] = useState(false);
   const [run, setRun] = useState<{ record: DemoRecord; events: DemoEvent[] } | null>(null);
+  const [expired, setExpired] = useState(false);
 
   useEffect(() => {
     const id = new URLSearchParams(window.location.search).get('run');
@@ -31,16 +32,17 @@ export function DemoRunner({ enabled, user }: { enabled: boolean; user: User }) 
   const poll = useCallback(async (id: string) => {
     const res = await fetch(`/api/demo/${id}`, { cache: 'no-store' });
     if (res.ok) setRun(await res.json());
+    else if (res.status === 404) setExpired(true);
   }, []);
 
   useEffect(() => {
     if (!runId) return;
     poll(runId);
     const finished = run?.events.some((e) => e.phase === 'done' || e.phase === 'failed');
-    if (finished) return;
+    if (finished || expired) return;
     const t = setInterval(() => poll(runId), 4000);
     return () => clearInterval(t);
-  }, [runId, poll, run?.events]);
+  }, [runId, poll, run?.events, expired]);
 
   const start = async () => {
     setStarting(true);
@@ -57,6 +59,17 @@ export function DemoRunner({ enabled, user }: { enabled: boolean; user: User }) 
     window.history.replaceState(null, '', `/demo?run=${body.id}`);
   };
 
+  if (runId && expired) {
+    return (
+      <div className="mt-10 rounded-lg border border-dashed border-ink/40 p-6">
+        <p className="font-medium">This run has expired.</p>
+        <p className="mt-1 text-sm text-ink-2">
+          Portal run pages are kept for 24 hours. Every run&apos;s full log stays on{' '}
+          <a className="underline underline-offset-4" href="https://github.com/georgitinchev/gantry/actions/workflows/demo.yml">GitHub Actions</a> for 90 days.
+        </p>
+      </div>
+    );
+  }
   if (runId) return <RunView run={run} />;
 
   if (!enabled) {

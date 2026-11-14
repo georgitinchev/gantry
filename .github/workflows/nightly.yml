@@ -16,8 +16,17 @@ jobs:
     timeout-minutes: 45
     permissions:
       contents: write # push snapshot.json to the status branch
+      actions: write  # re-enable this schedule (60-day inactivity backstop)
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: keepalive (portal Redis + this schedule)
+        env:
+          PORTAL_URL: ${{ vars.PORTAL_URL }}
+          DEMO_CALLBACK_SECRET: ${{ secrets.DEMO_CALLBACK_SECRET }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          ./hack/heartbeat.sh || echo "::warning::portal heartbeat failed"
+          gh workflow enable nightly.yml -R "$GITHUB_REPOSITORY" || echo "::warning::could not re-enable schedule"
       - run: cat hack/versions.env >> "$GITHUB_ENV"
       - uses: azure/setup-helm@2f5e7bc67f1f9972ab16657bb795f36d8f04de0e # v5.1.0
         with:
