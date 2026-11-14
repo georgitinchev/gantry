@@ -33,6 +33,10 @@ export default async function DemoPage({ searchParams }: { searchParams: Promise
         Pressing run starts a GitHub Actions job that creates a kind cluster, installs Crossplane, CloudNativePG and Kyverno,
         lints your request, applies it and verifies the result. It takes about five minutes and you can watch every step.
       </p>
+      <p className="mt-3 max-w-2xl text-sm text-ink-2">
+        Everything runs on a disposable GitHub-hosted runner and is destroyed when the job ends. Nothing is created on Vercel
+        or anywhere persistent. This page only starts the job and shows its progress.
+      </p>
       <ul className="mt-4 flex flex-wrap gap-x-6 gap-y-1 text-sm text-ink-2">
         <li>· one run per GitHub account every {LIMITS.perUserSeconds / 3600} h</li>
         <li>· one run at a time</li>

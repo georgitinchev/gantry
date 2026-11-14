@@ -76,7 +76,7 @@ export function DemoRunner({ enabled, user }: { enabled: boolean; user: User }) 
         <Choice label="Environment size" value={req.size} options={['small', 'medium']} onChange={(size) => setReq({ ...req, size })} />
         <Choice label="Exposure" value={req.exposure} options={['internal', 'public']} onChange={(exposure) => setReq({ ...req, exposure })} />
         <Choice
-          label="Add a PostgreSQL database"
+          label="Also request a PostgreSQL database (CloudNativePG, inside the throwaway cluster)"
           value={req.postgres ? 'yes' : 'no'}
           options={['yes', 'no']}
           onChange={(v) => setReq({ ...req, postgres: v === 'yes' })}
