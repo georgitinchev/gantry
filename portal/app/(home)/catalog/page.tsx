@@ -15,7 +15,7 @@ export default async function CatalogPage() {
       <h1 className="mt-2 text-3xl font-semibold tracking-tight sm:text-4xl">What do you need?</h1>
       <p className="mt-3 max-w-2xl text-ink-2">
         Every form below is generated from the platform&apos;s CompositeResourceDefinitions, so it can never drift from the
-        real API. Fill one in and open it as a pull request — CI does the rest.
+        real API. Fill one in and open it as a pull request. CI does the rest.
       </p>
       <CatalogBrowser offerings={offerings} />
     </main>

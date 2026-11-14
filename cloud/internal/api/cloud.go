@@ -1,5 +1,5 @@
 // Package api implements gantry-cloud: a deliberately small IaaS with the
-// behaviour real cloud APIs have and providers must handle — asynchronous
+// behaviour real cloud APIs have and providers must handle: asynchronous
 // provisioning, quotas, IP exhaustion, conflicts and transient failures.
 package api
 

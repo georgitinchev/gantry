@@ -10,8 +10,8 @@
 
 gantry is a small internal developer platform you can read end to end: a
 self-service **catalog**, **Crossplane** APIs behind it, a layered **policy gate**
-in front of it, and a real Kubernetes cluster that **proves** every change —
-built from scratch in CI, every time.
+in front of it, and a real Kubernetes cluster that **proves** every change.
+The cluster is built from scratch in CI, every time.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/assets/portal-dark.png">

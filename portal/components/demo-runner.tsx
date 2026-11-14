@@ -77,7 +77,7 @@ export function DemoRunner({ enabled, user }: { enabled: boolean; user: User }) 
       <div className="mt-10 rounded-lg border border-dashed border-ink/40 p-6">
         <p className="font-medium">The live demo is switched off on this deployment.</p>
         <p className="mt-1 text-sm text-ink-2">
-          The same pipeline runs on every pull request and every night — see the <a className="underline underline-offset-4" href="/status">latest verified run</a>.
+          The same pipeline runs on every pull request and every night. See the <a className="underline underline-offset-4" href="/status">latest verified run</a>.
         </p>
       </div>
     );

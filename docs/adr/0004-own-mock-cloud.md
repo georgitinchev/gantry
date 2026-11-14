@@ -23,6 +23,6 @@ platform APIs compose them like they would compose a real cloud's.
 
 - The provider, its reconcile loop and its failure modes are real code,
   tested end-to-end, with no external dependency or cost.
-- Behaviour that real clouds have — eventual consistency, quota errors, IP
-  exhaustion, rate limits — can be injected on purpose for failure testing.
+- Behaviour that real clouds have (eventual consistency, quota errors, IP
+  exhaustion, rate limits) can be injected on purpose for failure testing.
 - It is a simulation; this is stated everywhere it appears.

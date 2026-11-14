@@ -14,7 +14,7 @@ const DNS = /^[a-z0-9]([-a-z0-9]{0,61}[a-z0-9])?$/;
 /** Mirrors the server-side checks so the form fails fast; gantry-lint stays authoritative. */
 export function validate(o: Offering, d: Draft): Record<string, string> {
   const errors: Record<string, string> = {};
-  if (!TEAM.test(d.team)) errors.team = 'lowercase letters, digits and dashes, 3–30 chars';
+  if (!TEAM.test(d.team)) errors.team = 'lowercase letters, digits and dashes, 3 to 30 chars';
   if (!DNS.test(d.name)) errors.name = 'must be a DNS label (lowercase, digits, dashes)';
   else if (o.kind === 'AppEnvironment' && !d.name.startsWith(`${d.team}-`)) errors.name = `must start with "${d.team}-"`;
   if (o.namespaced && !d.namespace.startsWith(`${d.team}-`)) errors.namespace = `must be one of ${d.team}'s environments (${d.team}-…)`;

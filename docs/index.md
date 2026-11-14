@@ -18,7 +18,7 @@ in front of it, and **proof** that it works.
 
 ## How it fits together
 
-1. You add a file under `requests/<team>/` — by hand or from the portal.
+1. You add a file under `requests/<team>/`, by hand or from the portal.
 2. CI lints it, unit-tests the policies, then builds the whole platform on a
    throwaway kind cluster and applies every request.
 3. The e2e suite asserts readiness, admission rules and network isolation.

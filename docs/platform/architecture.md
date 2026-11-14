@@ -81,7 +81,7 @@ flowchart TB
 
 Every tenant namespace starts with `default-deny` for ingress and egress. Allowed
 paths are added explicitly: same-namespace traffic, DNS to `kube-system`,
-scraping from `monitoring`, and — only for `exposure: public` — traffic from
+scraping from `monitoring`, and (only for `exposure: public`) traffic from
 the `gateway` namespace. The e2e suite proves the crossed-out edge is actually
 dropped, not just declared.
 

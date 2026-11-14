@@ -9,7 +9,7 @@ const sans = Instrument_Sans({ subsets: ['latin'], variable: '--font-instrument'
 const mono = Martian_Mono({ subsets: ['latin'], variable: '--font-martian' });
 
 export const metadata: Metadata = {
-  title: { default: `${site.name} — ${site.tagline}`, template: `%s · ${site.name}` },
+  title: { default: `${site.name} · ${site.tagline}`, template: `%s · ${site.name}` },
   description:
     'A small, self-service internal developer platform: Crossplane APIs, a policy gate, and proof on a real cluster for every pull request.',
   authors: [{ name: site.author.name, url: site.author.url }],

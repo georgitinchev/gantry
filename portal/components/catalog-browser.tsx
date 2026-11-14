@@ -119,7 +119,7 @@ export function CatalogBrowser({ offerings }: { offerings: Offering[] }) {
             {valid ? 'Open as pull request on GitHub' : 'Fix the highlighted fields'}
           </a>
           <p className="text-xs text-ink-2">
-            GitHub opens a pre-filled file. Without write access it forks the repo and proposes the change — the same CI
+            GitHub opens a pre-filled file. Without write access it forks the repo and proposes the change. The same CI
             gate runs on your PR.
           </p>
         </div>
@@ -173,7 +173,7 @@ function FieldInput({ field, value, onChange, error }: { field: Field; value: st
       </fieldset>
     );
   }
-  const hint = field.type === 'integer' ? `${field.min ?? ''}–${field.max ?? ''}` : field.type === 'list' ? 'comma separated' : undefined;
+  const hint = field.type === 'integer' ? `${field.min ?? ''} to ${field.max ?? ''}` : field.type === 'list' ? 'comma separated' : undefined;
   return (
     <div className="grid gap-1">
       <Input label={label} hint={hint} value={value} onChange={onChange} error={error} />

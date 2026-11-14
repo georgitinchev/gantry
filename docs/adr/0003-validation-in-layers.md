@@ -29,5 +29,5 @@ silently prune (`exposur: public`), which schema validation alone misses.
 
 - Error messages point at the file and line, as GitHub annotations on the PR.
 - Some rules exist in two layers on purpose (e.g. size enums in the XRD and
-  the linter) — the API server is the source of truth, the linter is the fast
+  the linter). The API server is the source of truth; the linter is the fast
   feedback loop.

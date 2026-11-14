@@ -48,7 +48,7 @@ Every environment also gets:
 - Pod Security **restricted** enforced
 - default container requests and limits (LimitRange)
 - **default-deny** networking with explicit allows for same-namespace
-  traffic, DNS, monitoring, and — when `public` — the gateway
+  traffic, DNS, monitoring, and (when `public`) the gateway
 - image policy: pinned tags or digests from trusted registries only
 
 `large` requires an approver. Add
