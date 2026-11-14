@@ -11,3 +11,4 @@ coverage/
 .vercel
 /snapshots/local/
 /requests/demo/
+*.tsbuildinfo
