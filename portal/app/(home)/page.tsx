@@ -21,20 +21,20 @@ const stack = [
   { name: 'CloudNativePG', role: 'Postgres operator behind PostgresInstance' },
   { name: 'Kyverno', role: 'CEL admission policies, tested offline' },
   { name: 'Pod Security + NetworkPolicy', role: 'Tenant isolation, enforced and asserted' },
-  { name: 'Go', role: 'gantry-lint request validator' },
+  { name: 'Go', role: 'gantry-lint, gantry-cloud and a crossplane-runtime provider' },
   { name: 'GitHub Actions + kind', role: 'Ephemeral cluster for every change' },
   { name: 'Next.js + Fumadocs', role: 'This portal, catalog and docs' },
-  { name: 'Mermaid', role: 'Architecture diagrams as code' },
+  { name: 'Prometheus', role: 'Alerts with runbooks, proven by nightly drills' },
 ];
 
 const roadmap = [
-  { title: 'Platform APIs', state: 'done', note: 'AppEnvironment, PostgresInstance' },
+  { title: 'Platform APIs', state: 'done', note: 'AppEnvironment, PostgresInstance, VirtualMachine' },
   { title: 'Policy gate', state: 'done', note: 'gantry-lint + Kyverno' },
   { title: 'Proof on every PR', state: 'done', note: 'kind e2e with isolation checks' },
   { title: 'Portal + docs', state: 'done', note: 'catalog generated from the XRDs' },
   { title: 'Live demo', state: 'done', note: 'rate-limited, runs a real reconcile' },
   { title: 'Observability + runbooks', state: 'done', note: 'alerts that link to tested runbooks' },
-  { title: 'Mock cloud + own provider', state: 'next', note: 'networks, IPs, VMs via a custom Crossplane provider' },
+  { title: 'Mock cloud + own provider', state: 'done', note: 'networks, IPs, VMs via a custom Crossplane provider' },
   { title: 'Failure injection', state: 'done', note: 'nightly faults, alerts must fire' },
 ];
 

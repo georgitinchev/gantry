@@ -5,7 +5,8 @@ import type { Field, Offering } from '@/lib/catalog';
 import { filePath, toYaml, validate, type Draft } from '@/lib/request';
 import { site } from '@/lib/site';
 
-const defaultName = (o: Offering, team: string) => (o.kind === 'AppEnvironment' ? `${team}-dev` : 'orders');
+const defaultNames: Record<string, string> = { PostgresInstance: 'orders', VirtualMachine: 'worker' };
+const defaultName = (o: Offering, team: string) => (o.kind === 'AppEnvironment' ? `${team}-dev` : (defaultNames[o.kind] ?? 'main'));
 
 function initialDraft(o: Offering, team: string): Draft {
   const values: Record<string, string> = {};

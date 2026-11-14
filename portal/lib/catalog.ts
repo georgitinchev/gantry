@@ -41,6 +41,11 @@ const presentation: Record<string, Pick<Offering, 'title' | 'blurb' | 'backedBy'
     blurb: 'A managed Postgres cluster inside one of your environments, reachable only from it.',
     backedBy: 'CloudNativePG Cluster · NetworkPolicy',
   },
+  VirtualMachine: {
+    title: 'Virtual machine',
+    blurb: "A VM in gantry-cloud, placed in your environment's private network. Resizes in place.",
+    backedBy: 'gantry-cloud Instance · via provider-gantry-cloud',
+  },
 };
 
 type Schema = {

@@ -24,7 +24,7 @@ flowchart LR
   pr --> pol["kyverno test<br/>pass + fail fixtures"]
   pr --> ui["portal<br/>typecheck · tests · build"]
   lint & pol --> e2e["kind cluster<br/>Crossplane · CNPG · Kyverno"]
-  e2e --> checks["10 runtime checks<br/>readiness · admission · isolation"]
+  e2e --> checks["12 runtime checks<br/>readiness · admission · isolation · cloud networking"]
 ```
 
 The e2e suite doesn't stop at "it applied". It asserts that:
@@ -33,13 +33,32 @@ The e2e suite doesn't stop at "it applied". It asserts that:
 - Pod Security `restricted` and Kyverno reject non-compliant pods, each tested on its own
 - a large environment without an approver is refused at admission
 - pods in the same namespace reach Postgres, and **traffic from another tenant is dropped** by NetworkPolicy
+- every environment gets its own cloud network, and VMs get addresses inside it
+
+## What happens every night
+
+The nightly run builds the platform from zero, then **breaks it on purpose** and
+measures the response. Results are published to the portal's status page.
+
+| Drill | Expected outcome |
+|---|---|
+| delete a composed NetworkPolicy | Crossplane restores it (drift correction) |
+| crash-looping container | `GantryTenantPodCrashLooping` fires |
+| fill an environment's pod quota | `GantryTenantQuotaNearLimit` fires |
+| request a database in the full environment | `GantryCompositeNotReady` fires, then recovers on its own once quota frees up |
+| cloud API fails 60% of writes | the provider retries until the VM is Ready |
+
+Every alert links to a [runbook](docs/runbooks/index.md), and alert rules have
+`promtool` unit tests on every PR. The first drill run found a real bug: a
+crash-loop alert that could never fire, because each restart reset its `for:` timer.
 
 ## What you can request
 
 | Offering | Kind | Backed by |
 |---|---|---|
-| App environment | `AppEnvironment` (cluster-scoped) | Namespace, ResourceQuota, LimitRange, default-deny NetworkPolicies, owner RoleBinding |
+| App environment | `AppEnvironment` (cluster-scoped) | Namespace, ResourceQuota, LimitRange, default-deny NetworkPolicies, owner RoleBinding, and its own `/24` cloud network |
 | PostgreSQL | `PostgresInstance` (namespaced) | CloudNativePG `Cluster` plus a scoped NetworkPolicy |
+| Virtual machine | `VirtualMachine` (namespaced) | an `Instance` in **gantry-cloud**, reconciled by **provider-gantry-cloud**, the project's own Crossplane provider |
 
 ```yaml
 # requests/checkout/postgres-orders.yaml
@@ -61,6 +80,9 @@ spec:
 | `platform/rbac/` | the exact rights Crossplane needs to compose plain Kubernetes resources |
 | `policy/kyverno/` | CEL `ValidatingPolicy` admission rules and their unit tests |
 | `tools/lint/` | **gantry-lint**, a Go validator that reads the XRDs directly |
+| `cloud/` | **gantry-cloud**, a small IaaS API: IPAM, quotas, async provisioning, fault injection |
+| `provider/` | **provider-gantry-cloud**, a Crossplane provider on crossplane-runtime v2 |
+| `observability/` | alert rules, promtool tests, Prometheus values |
 | `requests/` | what teams have asked for, one directory per team |
 | `tests/e2e/` | runtime assertions against a live cluster |
 | `portal/` | Next.js + Fumadocs portal: catalog generated from the XRDs, status, live demo, docs |
@@ -75,6 +97,7 @@ You need Docker, kind, kubectl, Helm, Go and Node.
 make fresh     # create a kind cluster, install the platform, run e2e
 make lint      # gantry-lint on requests/
 make test      # Go + portal unit tests
+make drills    # observability + failure drills on the running cluster
 make portal    # http://localhost:3000
 ```
 
@@ -87,7 +110,8 @@ the first run takes longer while images download. On colima, raise inotify limit
 - [ADR 0001: CI-only runtime](docs/adr/0001-ci-only-runtime.md). There's no long-running cluster; every run starts from zero.
 - [ADR 0002: Crossplane v2 direct composition](docs/adr/0002-crossplane-v2-direct-composition.md). No provider-kubernetes in the core.
 - [ADR 0003: Validate in layers](docs/adr/0003-validation-in-layers.md). Lint, policy tests, admission and runtime checks.
-- [ADR 0004: A small mock cloud](docs/adr/0004-own-mock-cloud.md). Networks, IPs and VMs through a custom provider (in progress).
+- [ADR 0004: A small mock cloud](docs/adr/0004-own-mock-cloud.md). Networks, IPs and VMs through the project's own provider.
+- [ADR 0005: function-go-templating in the cluster](docs/adr/0005-composition-functions.md). Why there's no custom function yet.
 
 ## Status
 
@@ -96,9 +120,9 @@ the first run takes longer while images download. On colima, raise inotify limit
 | Platform APIs, policy gate, kind e2e | done |
 | Portal, catalog, docs, status page | done |
 | Live demo (GitHub sign-in, rate-limited) | done, enabled on deployment |
-| Observability + alert-tested runbooks | next |
-| Mock cloud + custom Crossplane provider | next |
-| Nightly failure injection | next |
+| Observability + alert-tested runbooks | done |
+| Mock cloud + custom Crossplane provider | done |
+| Nightly failure injection | done |
 
 ---
 

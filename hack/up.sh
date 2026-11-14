@@ -31,6 +31,15 @@ helm upgrade --install kyverno kyverno/kyverno \
   --set cleanupController.enabled=false \
   --set reportsController.enabled=false
 
+log "gantry-cloud + provider"
+kubectl apply -f provider/package/crds/
+kubectl apply -f platform/cloud/cloud.yaml
+# The API token is generated per cluster and never committed.
+kubectl -n gantry-system get secret gantry-cloud-token >/dev/null 2>&1 || \
+  kubectl -n gantry-system create secret generic gantry-cloud-token --from-literal=token="$(openssl rand -hex 24)"
+kubectl -n gantry-system rollout status deploy/gantry-cloud --timeout=120s
+kubectl -n gantry-system rollout status deploy/provider-gantry-cloud --timeout=120s
+
 log "rbac + functions"
 kubectl apply -f platform/rbac/
 kubectl apply -f platform/crossplane/functions.yaml

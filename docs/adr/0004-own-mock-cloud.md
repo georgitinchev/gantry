@@ -3,7 +3,7 @@ title: "ADR 0004: A small mock cloud instead of a real one"
 description: Why VMs, networks and buckets come from a cloud API that gantry ships itself.
 ---
 
-**Status:** proposed · 2026-11-14
+**Status:** accepted · 2026-11-14
 
 ## Context
 

@@ -12,8 +12,9 @@ in front of it, and **proof** that it works.
 
 | Offering | Kind | Scope | Backed by |
 |---|---|---|---|
-| App environment | `AppEnvironment` | cluster | Namespace, quota, limits, NetworkPolicies, RBAC |
+| App environment | `AppEnvironment` | cluster | Namespace, quota, limits, NetworkPolicies, RBAC, a private cloud network |
 | PostgreSQL | `PostgresInstance` | namespaced | CloudNativePG |
+| Virtual machine | `VirtualMachine` | namespaced | gantry-cloud via provider-gantry-cloud |
 
 ## How it fits together
 

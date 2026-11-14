@@ -31,7 +31,27 @@ s=$(wait_for 120 kubectl -n checkout-dev get networkpolicy default-deny -o name)
   && emit "Deleted default-deny NetworkPolicy is restored" "" pass "$s" "Crossplane re-created it" \
   || emit "Deleted default-deny NetworkPolicy is restored" "" fail -1 "not restored within 120s"
 
-# 2-4. Start the remaining faults together, then wait for each alert.
+# Cloud API access for fault injection, through a port-forward.
+kubectl -n gantry-system port-forward svc/gantry-cloud 18080:80 >/dev/null 2>&1 &
+pf=$!
+trap 'kill $pf 2>/dev/null' EXIT
+sleep 3
+cloud_token=$(kubectl -n gantry-system get secret gantry-cloud-token -o jsonpath='{.data.token}' | base64 -d)
+cloud() { curl -fsS -H "Authorization: Bearer $cloud_token" -H 'content-type: application/json' "$@"; }
+errors_503() { curl -fsS localhost:18080/metrics | awk '/gantry_cloud_requests_total/ && /code="503"/ {s += $NF} END {print s + 0}'; }
+
+# 2-5. Start the remaining faults together, then wait for each outcome.
+log "fault: gantry-cloud fails 60% of write calls; request a VM anyway"
+before_503=$(errors_503)
+cloud -X PUT localhost:18080/admin/faults -d '{"errorRate":0.6}' >/dev/null
+t_flaky=$SECONDS
+kubectl apply -f - >/dev/null <<YAML
+apiVersion: platform.gantry.internal/v1alpha1
+kind: VirtualMachine
+metadata: {name: drill-flaky, namespace: search-dev}
+spec: {size: small}
+YAML
+
 log "fault: crash-looping container in checkout-dev"
 t_crash=$SECONDS
 kubectl -n checkout-dev apply -f - >/dev/null <<YAML
@@ -90,6 +110,11 @@ s=$(wait_since $t_blocked 480 firing GantryCompositeNotReady '.labels.name == "d
   && emit "Database blocked by quota raises an alert" GantryCompositeNotReady pass "$s" "firing" \
   || emit "Database blocked by quota raises an alert" GantryCompositeNotReady fail -1 "not firing within 420s"
 
+s=$(wait_since $t_flaky 420 sh -c '[ "$(kubectl -n search-dev get virtualmachine drill-flaky -o jsonpath="{.status.conditions[?(@.type==\"Ready\")].status}")" = True ]') \
+  && emit "VM converges despite a flaky cloud API" "" pass "$s" "provider retried through $(( $(errors_503) - before_503 )) injected 503s" \
+  || emit "VM converges despite a flaky cloud API" "" fail -1 "not Ready within 420s"
+cloud -X PUT localhost:18080/admin/faults -d '{"errorRate":0}' >/dev/null
+
 # Recovery: free the quota and time the blocked database becoming Ready.
 log "recovery: remove the filler and wait for the blocked database"
 kubectl -n search-dev delete deployment drill-filler --wait=false >/dev/null
@@ -100,4 +125,5 @@ s=$(wait_for 420 sh -c '[ "$(kubectl -n search-dev get postgresinstance drill-bl
 log "cleanup"
 kubectl -n checkout-dev delete pod drill-crash --wait=false >/dev/null 2>&1
 kubectl -n search-dev delete postgresinstance drill-blocked --wait=false >/dev/null 2>&1
+kubectl -n search-dev delete virtualmachine drill-flaky --wait=false >/dev/null 2>&1
 [[ "$out" == /dev/stdout ]] || { cat "$out"; ! grep -q '"fail"' "$out"; }

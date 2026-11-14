@@ -14,20 +14,31 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  lint:
-    name: gantry-lint
+  go:
+    name: go (${{ matrix.module }})
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        module: [tools/lint, cloud, provider]
+    defaults:
+      run:
+        working-directory: ${{ matrix.module }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
-          go-version-file: tools/lint/go.mod
-          cache-dependency-path: tools/lint/go.sum
-      - name: unit tests
-        working-directory: tools/lint
-        run: go test ./...
+          go-version-file: ${{ matrix.module }}/go.mod
+          cache-dependency-path: ${{ matrix.module }}/go.*
+      - name: gofmt
+        run: test -z "$(gofmt -l . | tee /dev/stderr)"
+      - run: go vet ./...
+      - run: go test -race ./...
+      - name: generated code is up to date
+        if: matrix.module == 'provider'
+        run: go generate ./... && git diff --exit-code -- apis package
       - name: lint requests
-        working-directory: tools/lint
+        if: matrix.module == 'tools/lint'
         run: go run ./cmd/gantry-lint --root ../..
 
   policy:
@@ -69,7 +80,7 @@ jobs:
 
   e2e:
     name: e2e on kind
-    needs: [lint, policy, rules]
+    needs: [go, policy, rules]
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -85,6 +96,8 @@ jobs:
           cluster_name: gantry
           config: hack/kind.yaml
           node_image: ${{ env.KIND_NODE_IMAGE }}
+      - name: build and load images
+        run: ./hack/images.sh
       - name: install platform
         run: ./hack/up.sh
       - name: run e2e

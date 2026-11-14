@@ -51,7 +51,9 @@ jobs:
       - name: validate run id
         run: '[[ "$DEMO_ID" =~ ^[a-f0-9]{16}$ ]] || { echo "invalid demo_id"; exit 1; }'
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - run: ./hack/demo/report.sh cluster "Creating a kind cluster on a fresh runner" "$(jq -cn --arg u "$RUN_URL" '{runUrl: $u}')"
+      - name: report start
+        run: |
+          ./hack/demo/report.sh cluster "Creating a kind cluster on a fresh runner" "$(jq -cn --arg u "$RUN_URL" '{runUrl: $u}')"
       - run: cat hack/versions.env >> "$GITHUB_ENV"
       - uses: azure/setup-helm@2f5e7bc67f1f9972ab16657bb795f36d8f04de0e # v5.1.0
         with:
@@ -62,7 +64,8 @@ jobs:
           cluster_name: gantry
           config: hack/kind.yaml
           node_image: ${{ env.KIND_NODE_IMAGE }}
-      - run: ./hack/demo/report.sh platform "Installing Crossplane, CloudNativePG and Kyverno"
+      - run: ./hack/demo/report.sh platform "Building gantry-cloud and installing Crossplane, CloudNativePG, Kyverno"
+      - run: ./hack/images.sh
       - run: ./hack/up.sh
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:

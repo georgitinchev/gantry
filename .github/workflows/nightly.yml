@@ -28,6 +28,8 @@ jobs:
           cluster_name: gantry
           config: hack/kind.yaml
           node_image: ${{ env.KIND_NODE_IMAGE }}
+      - name: build and load images
+        run: ./hack/images.sh
       - name: verify platform
         id: verify
         continue-on-error: true
