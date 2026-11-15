@@ -10,9 +10,7 @@ spec:
   source:
     repoURL: git://git-server.gitops.svc.cluster.local/gantry.git
     targetRevision: main
-    path: policy/kyverno
-    directory:
-      recurse: false # tests/ holds Kyverno CLI fixtures, not cluster objects
+    path: policy/kyverno # not recursive, so tests/ (Kyverno CLI fixtures) is skipped
   destination:
     server: https://kubernetes.default.svc
   syncPolicy:

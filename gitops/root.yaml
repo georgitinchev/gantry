@@ -4,6 +4,10 @@ kind: Application
 metadata:
   name: gantry
   namespace: argocd
+  annotations:
+    # Diff against what the API server would store, so defaulted fields on the
+    # child Applications and the ApplicationSet don't show up as drift.
+    argocd.argoproj.io/compare-options: ServerSideDiff=true
 spec:
   project: default
   source:
@@ -15,3 +19,4 @@ spec:
     namespace: argocd
   syncPolicy:
     automated: {prune: true, selfHeal: true}
+    syncOptions: [ServerSideApply=true]
