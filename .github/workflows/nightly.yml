@@ -60,7 +60,10 @@ jobs:
           fi
           git rm -rq --ignore-unmatch . || true
           cp "$RUNNER_TEMP/snapshot.json" snapshot.json
-          git add snapshot.json
+          # The status branch has no portal/ to build; tell Vercel to skip it.
+          mkdir -p portal
+          printf '{\n  "git": { "deploymentEnabled": false }\n}\n' > portal/vercel.json
+          git add snapshot.json portal/vercel.json
           git commit -qm "status: $(date -u +%Y-%m-%dT%H:%MZ)" || exit 0
           git push origin status
       - name: diagnostics
