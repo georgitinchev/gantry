@@ -12,4 +12,8 @@ section "functions";             kubectl get functions -o wide
 section "non-running pods";      kubectl get pods -A --field-selector=status.phase!=Running
 section "warning events";        kubectl get events -A --field-selector type=Warning --sort-by=.lastTimestamp | tail -50
 section "crossplane logs";       kubectl -n crossplane-system logs deploy/crossplane --tail=100
+section "argo cd applications";  kubectl -n argocd get applications -o wide 2>/dev/null
+for a in $(kubectl -n argocd get applications -o name 2>/dev/null); do
+  kubectl -n argocd get "$a" -o jsonpath='{.metadata.name}: {.status.sync.status}/{.status.health.status} {.status.conditions[*].message}{"\n"}' 2>/dev/null
+done
 section "kyverno logs";          kubectl -n kyverno logs deploy/kyverno-admission-controller --tail=50

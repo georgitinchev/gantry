@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # Installs the gantry platform onto the current kube-context.
+# GITOPS=1 leaves platform APIs and policies to Argo CD (see hack/gitops.sh).
 set -euo pipefail
 cd "$(dirname "$0")/.."
 source hack/versions.env
@@ -45,12 +46,14 @@ kubectl apply -f platform/rbac/
 kubectl apply -f platform/crossplane/functions.yaml
 kubectl wait function --all --for=condition=Healthy --timeout=300s
 
-log "platform APIs"
-kubectl apply -R -f platform/apis/
-kubectl wait xrd --all --for=condition=Established --timeout=120s
+if [[ "${GITOPS:-0}" != 1 ]]; then
+  log "platform APIs"
+  kubectl apply -R -f platform/apis/
+  kubectl wait xrd --all --for=condition=Established --timeout=120s
 
-log "admission policies"
-kubectl apply -f policy/kyverno/
-kubectl wait validatingpolicies.policies.kyverno.io --all --for=jsonpath='{.status.conditionStatus.ready}'=true --timeout=60s
+  log "admission policies"
+  kubectl apply -f policy/kyverno/
+  kubectl wait validatingpolicies.policies.kyverno.io --all --for=jsonpath='{.status.conditionStatus.ready}'=true --timeout=60s
+fi
 
 log "platform ready"

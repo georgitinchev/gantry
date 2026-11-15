@@ -2,6 +2,7 @@ import 'server-only';
 import sample from '@/data/snapshot.sample.json';
 
 export type Check = { name: string; status: 'pass' | 'fail' };
+export type GitOpsApp = { name: string; sync: string; health: string; revision: string };
 export type Drill = { name: string; alert: string | null; status: 'pass' | 'fail'; seconds: number; note: string };
 export type Resource = {
   kind: string;
@@ -22,6 +23,7 @@ export type Snapshot = {
   versions: Record<string, string>;
   checks: Check[];
   drills?: Drill[];
+  gitops?: GitOpsApp[];
   resources: Resource[];
   source: 'live' | 'sample';
 };

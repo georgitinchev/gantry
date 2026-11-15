@@ -1,0 +1,30 @@
+# Argo CD, trimmed for a throwaway cluster: no Dex, no notifications, one replica each.
+dex:
+  enabled: false
+notifications:
+  enabled: false
+configs:
+  params:
+    server.insecure: true
+  cm:
+    # Poll Git every 30s (default 3m) so a pushed change shows up quickly.
+    timeout.reconciliation: 30s
+    application.resourceTrackingMethod: annotation
+    # Teach Argo CD that gantry's composite resources are healthy once Crossplane says Ready.
+    resource.customizations.health.platform.gantry.internal_AppEnvironment: &ready |
+      hs = {status = "Progressing", message = "waiting for Ready"}
+      if obj.status ~= nil and obj.status.conditions ~= nil then
+        for _, c in ipairs(obj.status.conditions) do
+          if c.type == "Ready" then
+            if c.status == "True" then
+              hs.status = "Healthy"
+              hs.message = "Ready"
+            else
+              hs.message = c.message or c.reason or "not Ready"
+            end
+          end
+        end
+      end
+      return hs
+    resource.customizations.health.platform.gantry.internal_PostgresInstance: *ready
+    resource.customizations.health.platform.gantry.internal_VirtualMachine: *ready

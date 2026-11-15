@@ -44,7 +44,8 @@ sequenceDiagram
   CI->>CI: gantry-lint (schema, layout, ownership, budget)
   CI->>CI: kyverno test (policy unit tests)
   CI->>K: kind create cluster, install platform
-  CI->>K: kubectl apply request
+  CI->>K: git push commit to in-cluster Git server
+  K->>K: Argo CD syncs tenant-checkout from Git
   K->>XP: AppEnvironment / PostgresInstance created
   XP->>XP: function-go-templating renders resources
   XP->>K: Namespace, quota, NetworkPolicies, CNPG Cluster

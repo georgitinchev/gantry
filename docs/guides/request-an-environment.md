@@ -26,7 +26,9 @@ Need a second environment? Name the file `appenvironment-<suffix>.yaml`.
 
 ## 2. Open a pull request
 
-CI reports problems as annotations on the exact line. Run the same check
+CI reports problems as annotations on the exact line, then proves the change
+on a fresh cluster where Argo CD syncs it from Git into a `tenant-<team>`
+Application. Merging is deploying. Run the same check
 locally:
 
 ```bash

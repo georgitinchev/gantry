@@ -25,11 +25,16 @@ flowchart LR
   pr["PR: requests/team/*.yaml"] --> lint["gantry-lint<br/>schema · ownership · budget"]
   pr --> pol["kyverno test<br/>pass + fail fixtures"]
   pr --> ui["portal<br/>typecheck · tests · build"]
-  lint & pol --> e2e["kind cluster<br/>Crossplane · CNPG · Kyverno"]
-  e2e --> checks["12 runtime checks<br/>readiness · admission · isolation · cloud networking"]
+  lint & pol --> e2e["kind cluster<br/>Crossplane · CNPG · Kyverno · Argo CD"]
+  e2e --> checks["13 runtime checks<br/>GitOps sync · readiness · admission · isolation · cloud networking"]
 ```
 
-The e2e suite doesn't stop at "it applied". It asserts that:
+Requests are never applied by hand. CI pushes the commit under test to a Git
+server inside the throwaway cluster, and **Argo CD** syncs it: an app of apps for
+the platform APIs and policies, and an ApplicationSet that gives every team
+directory its own Application. The e2e suite then asserts that:
+
+- every team's Argo CD Application is Synced and Healthy
 
 - every request reaches `Ready`
 - Pod Security `restricted` and Kyverno reject non-compliant pods, each tested on its own
@@ -45,6 +50,8 @@ measures the response. Results are published to the portal's status page.
 | Drill | Expected outcome |
 |---|---|
 | delete a composed NetworkPolicy | Crossplane restores it (drift correction) |
+| edit a request directly in the cluster | Argo CD reverts it to what Git says |
+| push a commit that changes a request | Argo CD syncs it and Crossplane updates the network policy |
 | crash-looping container | `GantryTenantPodCrashLooping` fires |
 | fill an environment's pod quota | `GantryTenantQuotaNearLimit` fires |
 | request a database in the full environment | `GantryCompositeNotReady` fires, then recovers on its own once quota frees up |
@@ -85,6 +92,7 @@ spec:
 | `cloud/` | **gantry-cloud**, a small IaaS API: IPAM, quotas, async provisioning, fault injection |
 | `provider/` | **provider-gantry-cloud**, a Crossplane provider on crossplane-runtime v2 |
 | `observability/` | alert rules, promtool tests, Prometheus values |
+| `gitops/` | Argo CD app of apps, the tenants ApplicationSet, health checks, in-cluster Git server |
 | `requests/` | what teams have asked for, one directory per team |
 | `tests/e2e/` | runtime assertions against a live cluster |
 | `portal/` | Next.js + Fumadocs portal: catalog generated from the XRDs, status, live demo, docs |
@@ -114,6 +122,7 @@ the first run takes longer while images download. On colima, raise inotify limit
 - [ADR 0003: Validate in layers](docs/adr/0003-validation-in-layers.md). Lint, policy tests, admission and runtime checks.
 - [ADR 0004: A small mock cloud](docs/adr/0004-own-mock-cloud.md). Networks, IPs and VMs through the project's own provider.
 - [ADR 0005: function-go-templating in the cluster](docs/adr/0005-composition-functions.md). Why there's no custom function yet.
+- [ADR 0006: GitOps in the throwaway cluster](docs/adr/0006-gitops-in-the-throwaway-cluster.md). Argo CD syncs from an in-cluster Git server.
 
 ## Status
 
@@ -125,6 +134,7 @@ the first run takes longer while images download. On colima, raise inotify limit
 | Observability + alert-tested runbooks | done |
 | Mock cloud + custom Crossplane provider | done |
 | Nightly failure injection | done |
+| GitOps with Argo CD (app of apps, ApplicationSet per team) | done |
 
 ---
 

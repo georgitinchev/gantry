@@ -1,0 +1,38 @@
+# One Argo CD Application per team directory under requests/.
+# A new team folder in Git becomes a new Application, with no change here.
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: tenants
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  goTemplate: true
+  goTemplateOptions: ["missingkey=error"]
+  generators:
+    - git:
+        repoURL: git://git-server.gitops.svc.cluster.local/gantry.git
+        revision: main
+        directories:
+          - path: requests/*
+  template:
+    metadata:
+      name: "tenant-{{ .path.basename }}"
+      labels:
+        platform.gantry.internal/team: "{{ .path.basename }}"
+    spec:
+      project: default
+      source:
+        repoURL: git://git-server.gitops.svc.cluster.local/gantry.git
+        targetRevision: main
+        path: "{{ .path.path }}"
+      destination:
+        server: https://kubernetes.default.svc
+      syncPolicy:
+        automated: {prune: true, selfHeal: true}
+        # A database can only be created once its environment's namespace exists,
+        # and the APIs once their XRDs are established; retry until they are.
+        retry:
+          limit: 20
+          backoff: {duration: 10s, factor: 2, maxDuration: 1m}

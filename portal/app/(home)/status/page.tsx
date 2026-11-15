@@ -74,6 +74,24 @@ export default async function StatusPage() {
             </>
           )}
 
+          {s.gitops && s.gitops.length > 0 && (
+            <>
+              <h2 className="annot mt-10">GitOps (Argo CD)</h2>
+              <p className="mt-1 text-sm text-ink-2">Every Application synced from Git at the commit under test.</p>
+              <ul className="mt-3 divide-y divide-line rounded-lg border border-line">
+                {s.gitops.map((a) => (
+                  <li key={a.name} className="flex items-center justify-between gap-3 px-4 py-2.5 text-sm">
+                    <span className="font-mono text-[0.8125rem]">{a.name}</span>
+                    <span className="flex gap-1.5">
+                      <StatusChip ok={a.sync === 'Synced'}>{a.sync}</StatusChip>
+                      <StatusChip ok={a.health === 'Healthy'}>{a.health}</StatusChip>
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
+
           <h2 className="annot mt-10">Versions</h2>
           <dl className="mt-3 divide-y divide-line rounded-lg border border-line">
             {Object.entries(s.versions).map(([k, v]) => (

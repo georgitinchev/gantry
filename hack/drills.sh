@@ -31,6 +31,32 @@ s=$(wait_for 120 kubectl -n checkout-dev get networkpolicy default-deny -o name)
   && emit "Deleted default-deny NetworkPolicy is restored" "" pass "$s" "Crossplane re-created it" \
   || emit "Deleted default-deny NetworkPolicy is restored" "" fail -1 "not restored within 120s"
 
+# GitOps drills (only when Argo CD manages the requests).
+if kubectl get namespace argocd >/dev/null 2>&1; then
+  exposure() { kubectl get appenvironment "$1" -o jsonpath='{.spec.exposure}'; }
+
+  log "drill: hand-edit a request in the cluster"
+  kubectl patch appenvironment checkout-dev --type merge -p '{"spec":{"exposure":"internal"}}' >/dev/null
+  s=$(wait_for 180 sh -c '[ "$(kubectl get appenvironment checkout-dev -o jsonpath="{.spec.exposure}")" = public ]') \
+    && emit "Manual edit to a request is reverted from Git" "" pass "$s" "Argo CD self-heal restored exposure=public" \
+    || emit "Manual edit to a request is reverted from Git" "" fail -1 "still $(exposure checkout-dev) after 180s"
+
+  log "drill: change a request in Git"
+  kubectl -n gitops port-forward svc/git-server 19418:9418 >/dev/null 2>&1 &
+  gpf=$!
+  sleep 2
+  work=$(mktemp -d)
+  git clone -q git://127.0.0.1:19418/gantry.git "$work/repo"
+  sed -i.bak 's/exposure: internal/exposure: public/' "$work/repo/requests/search/appenvironment.yaml" && rm "$work/repo/requests/search/appenvironment.yaml.bak"
+  git -C "$work/repo" -c user.name=gantry-drill -c user.email=drill@gantry.internal commit -qam "drill: expose search-dev"
+  git -C "$work/repo" push -q origin main
+  t_git=$SECONDS
+  s=$(wait_since $t_git 240 sh -c '[ "$(kubectl get networkpolicy allow-platform -n search-dev -o jsonpath="{.spec.ingress[0].from[1].namespaceSelector.matchLabels.platform\.gantry\.internal/role}")" = gateway ]') \
+    && emit "Git commit to a request goes live" "" pass "$s" "Argo CD synced it and Crossplane opened search-dev to the gateway" \
+    || emit "Git commit to a request goes live" "" fail -1 "not live within 240s"
+  kill $gpf 2>/dev/null; rm -rf "$work"
+fi
+
 # Cloud API access for fault injection, through a port-forward.
 kubectl -n gantry-system port-forward svc/gantry-cloud 18080:80 >/dev/null 2>&1 &
 pf=$!

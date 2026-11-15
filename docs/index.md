@@ -20,7 +20,7 @@ in front of it, and **proof** that it works.
 
 1. You add a file under `requests/<team>/`, by hand or from the portal.
 2. CI lints it, unit-tests the policies, then builds the whole platform on a
-   throwaway kind cluster and applies every request.
+   throwaway kind cluster, where Argo CD syncs every request from Git.
 3. The e2e suite asserts readiness, admission rules and network isolation.
 4. Green checks mean the request is proven, not just syntactically valid.
 

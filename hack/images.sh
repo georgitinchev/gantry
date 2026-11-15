@@ -5,4 +5,5 @@ cd "$(dirname "$0")/.."
 tag=${IMAGE_TAG:-dev}
 docker build -q -t "gantry/cloud:$tag" cloud
 docker build -q -t "gantry/provider-gantry-cloud:$tag" provider
-kind load docker-image --name "${KIND_CLUSTER:-gantry}" "gantry/cloud:$tag" "gantry/provider-gantry-cloud:$tag"
+docker build -q -t "gantry/git-server:$tag" gitops/git-server
+kind load docker-image --name "${KIND_CLUSTER:-gantry}" "gantry/cloud:$tag" "gantry/provider-gantry-cloud:$tag" "gantry/git-server:$tag"

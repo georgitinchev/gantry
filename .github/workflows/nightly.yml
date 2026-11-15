@@ -44,6 +44,7 @@ jobs:
         continue-on-error: true
         run: ./hack/verify.sh "$RUNNER_TEMP/snapshot.json"
         env:
+          GITOPS: "1"
           DRILLS: "1"
       - name: publish snapshot
         if: always()

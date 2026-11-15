@@ -20,8 +20,14 @@ composed=$(kubectl get appenvironment,postgresinstance,virtualmachine -A -o json
   value: [(.spec.crossplane.resourceRefs // [])[] | {kind, name}]
 }] | from_entries')
 
+gitops='[]'
+if kubectl get namespace argocd >/dev/null 2>&1; then
+  gitops=$(kubectl -n argocd get applications -o json | jq '[.items[] | {name: .metadata.name, sync: .status.sync.status, health: .status.health.status, revision: ((.status.sync.revision // "")[0:7])}] | sort_by(.name)')
+fi
+
 jq -n \
   --argjson xrs "$xrs" \
+  --argjson gitops "$gitops" \
   --argjson composed "$composed" \
   --slurpfile checks <(cat "$results" 2>/dev/null || true) \
   --slurpfile drills <(cat "$drills" 2>/dev/null || true) \
@@ -33,11 +39,13 @@ jq -n \
   --arg crossplane "$(helm -n crossplane-system list -o json | jq -r '.[0].app_version')" \
   --arg cnpg "$(helm -n cnpg-system list -o json | jq -r '.[0].app_version')" \
   --arg kyverno "$(helm -n kyverno list -o json | jq -r '.[0].app_version')" \
+  --arg argocd "$(helm -n argocd list -o json 2>/dev/null | jq -r '.[0].app_version // empty')" \
   '{
     generatedAt: $generatedAt, commit: $commit, runUrl: (if $runUrl == "" then null else $runUrl end),
     bootstrapSeconds: $bootstrap,
-    versions: {kubernetes: $k8s, crossplane: $crossplane, cloudnativepg: $cnpg, kyverno: $kyverno},
+    versions: ({kubernetes: $k8s, crossplane: $crossplane, cloudnativepg: $cnpg, kyverno: $kyverno} + (if $argocd == "" then {} else {argocd: $argocd} end)),
     checks: $checks,
     drills: $drills,
+    gitops: $gitops,
     resources: [$xrs[] | . + {composed: ($composed["\(.kind)/\(.namespace // "")/\(.name)"] // [])}]
   }'

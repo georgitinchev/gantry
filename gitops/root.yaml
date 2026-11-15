@@ -1,0 +1,17 @@
+# App of apps. Everything below gitops/apps is managed by Argo CD from Git.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: gantry
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: git://git-server.gitops.svc.cluster.local/gantry.git
+    targetRevision: main
+    path: gitops/apps
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  syncPolicy:
+    automated: {prune: true, selfHeal: true}

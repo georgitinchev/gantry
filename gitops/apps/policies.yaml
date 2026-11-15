@@ -1,0 +1,19 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: policies
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+spec:
+  project: default
+  source:
+    repoURL: git://git-server.gitops.svc.cluster.local/gantry.git
+    targetRevision: main
+    path: policy/kyverno
+    directory:
+      recurse: false # tests/ holds Kyverno CLI fixtures, not cluster objects
+  destination:
+    server: https://kubernetes.default.svc
+  syncPolicy:
+    automated: {prune: true, selfHeal: true}

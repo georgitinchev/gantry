@@ -5,10 +5,22 @@ cd "$(dirname "$0")/../.."
 
 source tests/e2e/lib.sh
 
-echo "--- apply requests (environments first, then services)"
-find requests -name 'appenvironment*.yaml' -exec kubectl apply -f {} \;
-kubectl wait appenvironment --all --for=condition=Ready --timeout=180s
-find requests -name '*.yaml' ! -name 'appenvironment*.yaml' -exec kubectl apply -f {} \;
+if kubectl get namespace argocd >/dev/null 2>&1; then
+  echo "--- requests are synced from Git by Argo CD"
+  teams=$(find requests -mindepth 1 -maxdepth 1 -type d -exec basename {} \; | sort)
+  for t in $teams; do
+    until kubectl -n argocd get application "tenant-$t" >/dev/null 2>&1; do sleep 3; done
+  done
+  kubectl -n argocd wait application -l platform.gantry.internal/team --for=jsonpath='{.status.health.status}'=Healthy --timeout=900s
+  kubectl -n argocd wait application --all --for=jsonpath='{.status.sync.status}'=Synced --timeout=120s
+  [[ $(kubectl -n argocd get application -l platform.gantry.internal/team -o name | wc -l) -eq $(wc -w <<<"$teams") ]] \
+    && pass "Argo CD: one Application per team, all Synced and Healthy" || fail "tenant Applications do not match requests/"
+else
+  echo "--- apply requests (environments first, then services)"
+  find requests -name 'appenvironment*.yaml' -exec kubectl apply -f {} \;
+  kubectl wait appenvironment --all --for=condition=Ready --timeout=180s
+  find requests -name '*.yaml' ! -name 'appenvironment*.yaml' -exec kubectl apply -f {} \;
+fi
 kubectl wait postgresinstance -A --all --for=condition=Ready --timeout=480s
 kubectl wait virtualmachine -A --all --for=condition=Ready --timeout=240s
 pass "all requests Ready"
