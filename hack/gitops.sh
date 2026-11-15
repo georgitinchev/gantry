@@ -19,7 +19,9 @@ GIT_INDEX_FILE=$tmp_index git add -A
 tree=$(GIT_INDEX_FILE=$tmp_index git write-tree)
 rm -f "$tmp_index"
 rev=$(GIT_AUTHOR_NAME=gantry GIT_AUTHOR_EMAIL=ci@gantry.internal GIT_COMMITTER_NAME=gantry GIT_COMMITTER_EMAIL=ci@gantry.internal \
-  git commit-tree "$tree" -p HEAD -m "working tree under test")
+  git commit-tree "$tree" -m "tree under test: $(git rev-parse --short HEAD)")
+# A parentless commit: Argo CD needs the tree, not the history, and it can be
+# pushed from CI's shallow checkout (pushing HEAD's ancestry would be refused).
 kubectl -n gitops port-forward svc/git-server 19418:9418 >/dev/null 2>&1 &
 pf=$!; trap 'kill $pf 2>/dev/null' EXIT
 for _ in $(seq 1 20); do nc -z 127.0.0.1 19418 2>/dev/null && break; sleep 0.5; done
