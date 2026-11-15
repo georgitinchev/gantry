@@ -1,15 +1,20 @@
 {
-  "generatedAt": "2026-11-14T23:34:24Z",
-  "commit": "a577c68a283d090597f2daea6479158b84acfdca",
-  "runUrl": "https://github.com/georgitinchev/gantry/actions/runs/43653013065",
-  "bootstrapSeconds": 55,
+  "generatedAt": "2026-11-15T00:21:02Z",
+  "commit": "217d45ddb3f80af435070cf73a6344f70b22c44f",
+  "runUrl": "https://github.com/georgitinchev/gantry/actions/runs/43656980350",
+  "bootstrapSeconds": 75,
   "versions": {
     "kubernetes": "v1.37.0",
     "crossplane": "2.4.3",
     "cloudnativepg": "1.30.1",
-    "kyverno": "v1.19.2"
+    "kyverno": "v1.19.2",
+    "argocd": "v3.5.7"
   },
   "checks": [
+    {
+      "name": "Argo CD: one Application per team, all Synced and Healthy",
+      "status": "pass"
+    },
     {
       "name": "all requests Ready",
       "status": "pass"
@@ -47,7 +52,7 @@
       "status": "pass"
     },
     {
-      "name": "VM ip 10.40.1.10 is inside its environment's network 10.40.1.0/24",
+      "name": "VM ip 10.40.0.10 is inside its environment's network 10.40.0.0/24",
       "status": "pass"
     },
     {
@@ -68,6 +73,20 @@
       "note": "Crossplane re-created it"
     },
     {
+      "name": "Manual edit to a request is reverted from Git",
+      "alert": null,
+      "status": "pass",
+      "seconds": 5,
+      "note": "Argo CD self-heal restored exposure=public"
+    },
+    {
+      "name": "Git commit to a request goes live",
+      "alert": null,
+      "status": "pass",
+      "seconds": 15,
+      "note": "Argo CD synced it and Crossplane opened search-dev to the gateway"
+    },
+    {
       "name": "VM converges despite failing cloud API calls",
       "alert": null,
       "status": "pass",
@@ -78,29 +97,61 @@
       "name": "Exhausted pod quota raises an alert",
       "alert": "GantryTenantQuotaNearLimit",
       "status": "pass",
-      "seconds": 76,
+      "seconds": 71,
       "note": "firing"
     },
     {
       "name": "Crash-looping container raises an alert",
       "alert": "GantryTenantPodCrashLooping",
       "status": "pass",
-      "seconds": 92,
+      "seconds": 86,
       "note": "firing"
     },
     {
       "name": "Database blocked by quota raises an alert",
       "alert": "GantryCompositeNotReady",
       "status": "pass",
-      "seconds": 137,
+      "seconds": 136,
       "note": "firing"
     },
     {
       "name": "Blocked database recovers once quota frees up",
       "alert": null,
       "status": "pass",
-      "seconds": 71,
+      "seconds": 70,
       "note": "became Ready without intervention"
+    }
+  ],
+  "gitops": [
+    {
+      "name": "gantry",
+      "sync": "OutOfSync",
+      "health": "Healthy",
+      "revision": "f334bda"
+    },
+    {
+      "name": "platform-apis",
+      "sync": "Synced",
+      "health": "Healthy",
+      "revision": "f334bda"
+    },
+    {
+      "name": "policies",
+      "sync": "Synced",
+      "health": "Healthy",
+      "revision": "f334bda"
+    },
+    {
+      "name": "tenant-checkout",
+      "sync": "Synced",
+      "health": "Healthy",
+      "revision": "f334bda"
+    },
+    {
+      "name": "tenant-search",
+      "sync": "Synced",
+      "health": "Healthy",
+      "revision": "f334bda"
     }
   ],
   "resources": [
@@ -110,14 +161,14 @@
       "namespace": null,
       "ready": true,
       "synced": true,
-      "created": "2026-11-14T23:27:06Z",
+      "created": "2026-11-15T00:15:34Z",
       "spec": {
         "crossplane": {
           "compositionRef": {
             "name": "appenvironment"
           },
           "compositionRevisionRef": {
-            "name": "appenvironment-f83eefd"
+            "name": "appenvironment-fd1ac00"
           },
           "compositionUpdatePolicy": "Automatic",
           "resourceRefs": [
@@ -186,7 +237,7 @@
       "status": {
         "namespace": "checkout-dev",
         "network": {
-          "cidr": "10.40.1.0/24"
+          "cidr": "10.40.0.0/24"
         },
         "quota": {
           "cpu": "2",
@@ -239,14 +290,14 @@
       "namespace": null,
       "ready": true,
       "synced": true,
-      "created": "2026-11-14T23:27:06Z",
+      "created": "2026-11-15T00:15:33Z",
       "spec": {
         "crossplane": {
           "compositionRef": {
             "name": "appenvironment"
           },
           "compositionRevisionRef": {
-            "name": "appenvironment-f83eefd"
+            "name": "appenvironment-fd1ac00"
           },
           "compositionUpdatePolicy": "Automatic",
           "resourceRefs": [
@@ -299,14 +350,14 @@
             }
           ]
         },
-        "exposure": "internal",
+        "exposure": "public",
         "size": "medium",
         "team": "search"
       },
       "status": {
         "namespace": "search-dev",
         "network": {
-          "cidr": "10.40.0.0/24"
+          "cidr": "10.40.1.0/24"
         },
         "quota": {
           "cpu": "4",
@@ -355,14 +406,14 @@
       "namespace": "checkout-dev",
       "ready": true,
       "synced": true,
-      "created": "2026-11-14T23:29:40Z",
+      "created": "2026-11-15T00:15:54Z",
       "spec": {
         "crossplane": {
           "compositionRef": {
             "name": "postgresinstance-cnpg"
           },
           "compositionRevisionRef": {
-            "name": "postgresinstance-cnpg-d2de814"
+            "name": "postgresinstance-cnpg-9b8dda1"
           },
           "compositionUpdatePolicy": "Automatic",
           "resourceRefs": [
@@ -405,14 +456,14 @@
       "namespace": "checkout-dev",
       "ready": true,
       "synced": true,
-      "created": "2026-11-14T23:29:40Z",
+      "created": "2026-11-15T00:15:54Z",
       "spec": {
         "crossplane": {
           "compositionRef": {
             "name": "virtualmachine-gantry-cloud"
           },
           "compositionRevisionRef": {
-            "name": "virtualmachine-gantry-cloud-690738c"
+            "name": "virtualmachine-gantry-cloud-81dc378"
           },
           "compositionUpdatePolicy": "Automatic",
           "resourceRefs": [
@@ -426,8 +477,8 @@
         "size": "small"
       },
       "status": {
-        "cloudId": "vm-050a8d44a6e1",
-        "ip": "10.40.1.10",
+        "cloudId": "vm-6c13b7ae654e",
+        "ip": "10.40.0.10",
         "state": "running"
       },
       "composed": [
