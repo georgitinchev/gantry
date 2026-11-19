@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-11-18T11:59:37Z",
+  "generatedAt": "2026-11-19T11:56:38Z",
   "commit": "b549e0602c9fe68f4a5a86bf4fc64cb04695fb0d",
-  "runUrl": "https://github.com/georgitinchev/gantry/actions/runs/44298234869",
-  "bootstrapSeconds": 85,
+  "runUrl": "https://github.com/georgitinchev/gantry/actions/runs/44517808590",
+  "bootstrapSeconds": 95,
   "versions": {
     "kubernetes": "v1.37.0",
     "crossplane": "2.4.3",
@@ -83,7 +83,7 @@
       "name": "Git commit to a request goes live",
       "alert": null,
       "status": "pass",
-      "seconds": 41,
+      "seconds": 31,
       "note": "Argo CD synced it and Crossplane opened search-dev to the gateway"
     },
     {
@@ -94,31 +94,31 @@
       "note": "provider retried through 3 injected 503s"
     },
     {
-      "name": "Crash-looping container raises an alert",
-      "alert": "GantryTenantPodCrashLooping",
-      "status": "pass",
-      "seconds": 81,
-      "note": "firing"
-    },
-    {
       "name": "Exhausted pod quota raises an alert",
       "alert": "GantryTenantQuotaNearLimit",
       "status": "pass",
-      "seconds": 81,
+      "seconds": 77,
+      "note": "firing"
+    },
+    {
+      "name": "Crash-looping container raises an alert",
+      "alert": "GantryTenantPodCrashLooping",
+      "status": "pass",
+      "seconds": 92,
       "note": "firing"
     },
     {
       "name": "Database blocked by quota raises an alert",
       "alert": "GantryCompositeNotReady",
       "status": "pass",
-      "seconds": 137,
+      "seconds": 143,
       "note": "firing"
     },
     {
       "name": "Blocked database recovers once quota frees up",
       "alert": null,
       "status": "pass",
-      "seconds": 71,
+      "seconds": 66,
       "note": "became Ready without intervention"
     }
   ],
@@ -127,31 +127,31 @@
       "name": "gantry",
       "sync": "Synced",
       "health": "Healthy",
-      "revision": "c1e136c"
+      "revision": "4068f20"
     },
     {
       "name": "platform-apis",
       "sync": "Synced",
       "health": "Healthy",
-      "revision": "c1e136c"
+      "revision": "4068f20"
     },
     {
       "name": "policies",
       "sync": "Synced",
       "health": "Healthy",
-      "revision": "c1e136c"
+      "revision": "4068f20"
     },
     {
       "name": "tenant-checkout",
       "sync": "Synced",
       "health": "Healthy",
-      "revision": "c1e136c"
+      "revision": "4068f20"
     },
     {
       "name": "tenant-search",
       "sync": "Synced",
       "health": "Healthy",
-      "revision": "c1e136c"
+      "revision": "4068f20"
     }
   ],
   "resources": [
@@ -161,7 +161,7 @@
       "namespace": null,
       "ready": true,
       "synced": true,
-      "created": "2026-11-18T11:53:44Z",
+      "created": "2026-11-19T11:50:53Z",
       "spec": {
         "crossplane": {
           "compositionRef": {
@@ -290,7 +290,7 @@
       "namespace": null,
       "ready": true,
       "synced": true,
-      "created": "2026-11-18T11:53:44Z",
+      "created": "2026-11-19T11:50:53Z",
       "spec": {
         "crossplane": {
           "compositionRef": {
@@ -406,7 +406,7 @@
       "namespace": "checkout-dev",
       "ready": true,
       "synced": true,
-      "created": "2026-11-18T11:54:04Z",
+      "created": "2026-11-19T11:51:13Z",
       "spec": {
         "crossplane": {
           "compositionRef": {
@@ -456,7 +456,7 @@
       "namespace": "checkout-dev",
       "ready": true,
       "synced": true,
-      "created": "2026-11-18T11:54:04Z",
+      "created": "2026-11-19T11:51:13Z",
       "spec": {
         "crossplane": {
           "compositionRef": {
@@ -477,7 +477,7 @@
         "size": "small"
       },
       "status": {
-        "cloudId": "vm-93a299fecf6f",
+        "cloudId": "vm-2a616480baef",
         "ip": "10.40.0.10",
         "state": "running"
       },
