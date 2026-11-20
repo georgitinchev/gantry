@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-11-19T11:56:38Z",
+  "generatedAt": "2026-11-20T11:57:54Z",
   "commit": "b549e0602c9fe68f4a5a86bf4fc64cb04695fb0d",
-  "runUrl": "https://github.com/georgitinchev/gantry/actions/runs/44517808590",
-  "bootstrapSeconds": 95,
+  "runUrl": "https://github.com/georgitinchev/gantry/actions/runs/44730382179",
+  "bootstrapSeconds": 93,
   "versions": {
     "kubernetes": "v1.37.0",
     "crossplane": "2.4.3",
@@ -52,7 +52,7 @@
       "status": "pass"
     },
     {
-      "name": "VM ip 10.40.0.10 is inside its environment's network 10.40.0.0/24",
+      "name": "VM ip 10.40.1.10 is inside its environment's network 10.40.1.0/24",
       "status": "pass"
     },
     {
@@ -83,7 +83,7 @@
       "name": "Git commit to a request goes live",
       "alert": null,
       "status": "pass",
-      "seconds": 31,
+      "seconds": 87,
       "note": "Argo CD synced it and Crossplane opened search-dev to the gateway"
     },
     {
@@ -97,21 +97,21 @@
       "name": "Exhausted pod quota raises an alert",
       "alert": "GantryTenantQuotaNearLimit",
       "status": "pass",
-      "seconds": 77,
+      "seconds": 72,
       "note": "firing"
     },
     {
       "name": "Crash-looping container raises an alert",
       "alert": "GantryTenantPodCrashLooping",
       "status": "pass",
-      "seconds": 92,
+      "seconds": 87,
       "note": "firing"
     },
     {
       "name": "Database blocked by quota raises an alert",
       "alert": "GantryCompositeNotReady",
       "status": "pass",
-      "seconds": 143,
+      "seconds": 142,
       "note": "firing"
     },
     {
@@ -127,31 +127,31 @@
       "name": "gantry",
       "sync": "Synced",
       "health": "Healthy",
-      "revision": "4068f20"
+      "revision": "de99e81"
     },
     {
       "name": "platform-apis",
       "sync": "Synced",
       "health": "Healthy",
-      "revision": "4068f20"
+      "revision": "de99e81"
     },
     {
       "name": "policies",
       "sync": "Synced",
       "health": "Healthy",
-      "revision": "4068f20"
+      "revision": "de99e81"
     },
     {
       "name": "tenant-checkout",
       "sync": "Synced",
       "health": "Healthy",
-      "revision": "4068f20"
+      "revision": "de99e81"
     },
     {
       "name": "tenant-search",
       "sync": "Synced",
       "health": "Healthy",
-      "revision": "4068f20"
+      "revision": "de99e81"
     }
   ],
   "resources": [
@@ -161,7 +161,7 @@
       "namespace": null,
       "ready": true,
       "synced": true,
-      "created": "2026-11-19T11:50:53Z",
+      "created": "2026-11-20T11:51:13Z",
       "spec": {
         "crossplane": {
           "compositionRef": {
@@ -237,7 +237,7 @@
       "status": {
         "namespace": "checkout-dev",
         "network": {
-          "cidr": "10.40.0.0/24"
+          "cidr": "10.40.1.0/24"
         },
         "quota": {
           "cpu": "2",
@@ -290,7 +290,7 @@
       "namespace": null,
       "ready": true,
       "synced": true,
-      "created": "2026-11-19T11:50:53Z",
+      "created": "2026-11-20T11:51:13Z",
       "spec": {
         "crossplane": {
           "compositionRef": {
@@ -357,7 +357,7 @@
       "status": {
         "namespace": "search-dev",
         "network": {
-          "cidr": "10.40.1.0/24"
+          "cidr": "10.40.0.0/24"
         },
         "quota": {
           "cpu": "4",
@@ -406,7 +406,7 @@
       "namespace": "checkout-dev",
       "ready": true,
       "synced": true,
-      "created": "2026-11-19T11:51:13Z",
+      "created": "2026-11-20T11:51:33Z",
       "spec": {
         "crossplane": {
           "compositionRef": {
@@ -456,7 +456,7 @@
       "namespace": "checkout-dev",
       "ready": true,
       "synced": true,
-      "created": "2026-11-19T11:51:13Z",
+      "created": "2026-11-20T11:51:33Z",
       "spec": {
         "crossplane": {
           "compositionRef": {
@@ -477,8 +477,8 @@
         "size": "small"
       },
       "status": {
-        "cloudId": "vm-2a616480baef",
-        "ip": "10.40.0.10",
+        "cloudId": "vm-9fe0804bde72",
+        "ip": "10.40.1.10",
         "state": "running"
       },
       "composed": [
