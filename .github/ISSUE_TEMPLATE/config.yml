@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security vulnerability
+    url: https://github.com/georgitinchev/gantry/security/advisories/new
+    about: Report privately, not as an issue.
+  - name: Docs
+    url: https://gantry-tinchev.vercel.app/docs
+    about: Guides for requesting infrastructure.
