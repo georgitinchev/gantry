@@ -46,6 +46,9 @@ jobs:
         env:
           GITOPS: "1"
           DRILLS: "1"
+      - name: diagnostics
+        if: always() && steps.verify.outcome == 'failure'
+        run: ./hack/diagnose.sh
       - name: publish snapshot
         if: always()
         run: |
@@ -66,9 +69,6 @@ jobs:
           git add snapshot.json portal/vercel.json
           git commit -qm "status: $(date -u +%Y-%m-%dT%H:%MZ)" || exit 0
           git push origin status
-      - name: diagnostics
-        if: steps.verify.outcome == 'failure'
-        run: ./hack/diagnose.sh
       - name: fail the run if verification failed
-        if: steps.verify.outcome == 'failure'
+        if: always() && steps.verify.outcome == 'failure'
         run: exit 1
